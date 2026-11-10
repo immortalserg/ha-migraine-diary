@@ -48,13 +48,13 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
         profile_id = data.pop("profile_id")
         try:
             if name == "start_episode":
-                episode_id = await store.start_episode(
+                episode_id, created = await store.ensure_active_episode(
                     profile_id, started_at=data.get("started_at"),
                     headache_type=data.get("headache_type", "unspecified"),
                     notes=data.get("notes"),
                 )
                 async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
-                return {"episode_id": episode_id}
+                return {"episode_id": episode_id, "created": created}
             if name == "end_episode":
                 requested_id = data.get("episode_id")
                 active = await store.get_active_episode(profile_id)
