@@ -10,10 +10,10 @@ const WORDS = {
   de: {title:"Migränetagebuch",start:"Beginn",end:"Ende",premonition:"Vorboten",pain:"Schmerzstärke",zones:"Schmerzzonen",symptoms:"Symptome",medications:"Medikamente",record:"Schmerz speichern",noEpisode:"Kein aktiver Anfall",active:"Anfall läuft",error:"Fehler",nausea:"Übelkeit",vomiting:"Erbrechen",light:"Lichtempfindlichkeit",noise:"Geräuschempfindlichkeit",neck:"Nackenschmerzen",dizzy:"Schwindel",blur:"Verschwommenes Sehen",fatigue:"Müdigkeit"},
   it: {title:"Diario dell'emicrania",start:"Inizio",end:"Fine",premonition:"Sintomi premonitori",pain:"Intensità del dolore",zones:"Zone dolorose",symptoms:"Sintomi",medications:"Farmaci",record:"Registra dolore",noEpisode:"Nessun attacco attivo",active:"Attacco in corso",error:"Errore",nausea:"Nausea",vomiting:"Vomito",light:"Sensibilità alla luce",noise:"Sensibilità ai suoni",neck:"Dolore al collo",dizzy:"Vertigini",blur:"Vista offuscata",fatigue:"Stanchezza"}
 };
-const SYMPTOMS=["nausea","vomiting","light","noise","neck","dizzy","blur","fatigue"];
+const SYMPTOMS=["Сильная ударная боль","Пульсирующая боль","Пульсирующая периодическая боль","Усиливается при движении","Тошнота","Рвота","Светочувствительность","Чувствительность к шуму","Боль в шее","Головокружение","Насморк","Бессонница","Подавленное настроение","Тревожность","Чувствительность к запахам","Жар / ощущение жара","Звон в ушах","Усталость","Расплывчатое зрение","Перепады настроения"];
 class MigraineDiaryCard extends HTMLElement {
   setConfig(config) {
-    this._config = {profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], ...config};
+    this._config = {use_ha_helpers:true, profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], ...config};
     if (!Array.isArray(this._config.medications)) throw new Error("medications must be an array");
     this._zones = new Set(); this._symptoms = new Set(); this._intensity = 5;
     this._loadedAssessmentKey = null;
@@ -26,23 +26,40 @@ class MigraineDiaryCard extends HTMLElement {
   set hass(hass) {
     this._hass=hass;
     const entity=hass?.states?.[this._config?.active_entity || "binary_sensor.migren"];
-    const assessment=entity?.attributes?.latest_pain;
-    const key=entity?.state==="on" ? entity?.attributes?.episode_id + ":" + (assessment?.occurred_at || "none") : "off";
-    if(key !== this._loadedAssessmentKey){
-      this._loadedAssessmentKey=key;
-      if(assessment && entity?.state==="on"){
-        this._zones=new Set(Array.isArray(assessment.zones)?assessment.zones:[]);
-        this._symptoms=new Set(Array.isArray(assessment.symptoms)?assessment.symptoms:[]);
-        this._intensity=assessment.intensity>=1 && assessment.intensity<=9 ? assessment.intensity : 5;
-      }else if(entity?.state==="off"){
-        this._zones.clear();this._symptoms.clear();this._intensity=5;
+    if(this._config?.use_ha_helpers){
+      this._zones=new Set(Array.from({length:19},(_,i)=>i+1).filter(i=>hass?.states?.["input_boolean.migraine_zone_"+i]?.state==="on"));
+      this._symptoms=new Set(SYMPTOMS.filter((_,i)=>hass?.states?.["input_boolean.migrene_sypptome"+(i+1)]?.state==="on"));
+      const level=Number(hass?.states?.["input_number.migraine_level"]?.state);
+      if(Number.isInteger(level)&&level>=1&&level<=9)this._intensity=level;
+    }else{
+      const assessment=entity?.attributes?.latest_pain;
+      const key=entity?.state==="on" ? entity?.attributes?.episode_id + ":" + (assessment?.occurred_at || "none") : "off";
+      if(key !== this._loadedAssessmentKey){
+        this._loadedAssessmentKey=key;
+        if(assessment && entity?.state==="on"){
+          this._zones=new Set(Array.isArray(assessment.zones)?assessment.zones:[]);
+          this._symptoms=new Set(Array.isArray(assessment.symptoms)?assessment.symptoms:[]);
+          this._intensity=assessment.intensity>=1 && assessment.intensity<=9 ? assessment.intensity : 5;
+        }
       }
     }
-    this._restoreDraft(key);
     if(this._pendingActive !== undefined && this._entityActive() === this._pendingActive) this._pendingActive=undefined;
     if(this.shadowRoot)this._render();
   }
   getCardSize(){return 9;}
+  async _toggleZone(i){
+    if(!this._config.use_ha_helpers){this._zones.has(i)?this._zones.delete(i):this._zones.add(i);this._render();return;}
+    const entity_id="input_boolean.migraine_zone_"+i;
+    await this._hass.callService("input_boolean","toggle",{entity_id});
+  }
+  async _toggleSymptom(i){
+    if(!this._config.use_ha_helpers){const name=SYMPTOMS[i-1];this._symptoms.has(name)?this._symptoms.delete(name):this._symptoms.add(name);this._render();return;}
+    await this._hass.callService("input_boolean","toggle",{entity_id:"input_boolean.migrene_sypptome"+i});
+  }
+  async _setLevel(i){
+    if(!this._config.use_ha_helpers){this._intensity=i;this._render();return;}
+    await this._hass.callService("input_number","set_value",{entity_id:"input_number.migraine_level",value:i});
+  }
   _draftKey(){
     return "migraine-diary:draft:"+this._config.profile_id+":"+(this._config.active_entity || "binary_sensor.migren");
   }
@@ -166,8 +183,7 @@ class MigraineDiaryCard extends HTMLElement {
         if(this._zones.has(i))node.classList.add("selected-zone");
         node.addEventListener("click",event=>{
           event.preventDefault();event.stopPropagation();
-          if(this._zones.has(i))this._zones.delete(i);else this._zones.add(i);
-          this._saveDraft();this._render();
+          this._toggleZone(i);
         });
       }
       for(let i=1;i<=9;i++){
@@ -177,20 +193,20 @@ class MigraineDiaryCard extends HTMLElement {
         if(this._intensity===i){node.style.stroke="var(--primary-color, #f44336)";node.style.strokeWidth="2.8px";}
         node.addEventListener("click",event=>{
           event.preventDefault();event.stopPropagation();
-          this._intensity=i;this._saveDraft();this._render();
+          this._setLevel(i);
         });
       }
       card.append(holder);
     }else{
       const fallback=document.createElement("div");fallback.className="row";card.append(fallback);
-      for(let i=1;i<=19;i++)fallback.append(this._button(String(i),()=>{this._zones.has(i)?this._zones.delete(i):this._zones.add(i);this._saveDraft();this._render();},false,this._zones.has(i)));
+      for(let i=1;i<=19;i++)fallback.append(this._button(String(i),()=>this._toggleZone(i),false,this._zones.has(i)));
     }
     const intensity=document.createElement("h3");intensity.textContent=this._t("pain")+" (1–9): "+this._intensity;card.append(intensity);
     const levels=document.createElement("div");levels.className="row";card.append(levels);
-    if(!this._svgLoaded) for(let i=1;i<=9;i++)levels.append(this._button(String(i),()=>{this._intensity=i;this._saveDraft();this._render();},false,this._intensity===i));
+    if(!this._svgLoaded) for(let i=1;i<=9;i++)levels.append(this._button(String(i),()=>this._setLevel(i),false,this._intensity===i));
     const symptomHeading=document.createElement("h3");symptomHeading.textContent=this._t("symptoms");card.append(symptomHeading);
     const symptoms=document.createElement("div");symptoms.className="row";card.append(symptoms);
-    for(const key of SYMPTOMS) symptoms.append(this._button(this._t(key),()=>{this._symptoms.has(key)?this._symptoms.delete(key):this._symptoms.add(key);this._saveDraft();this._render();},false,this._symptoms.has(key)));
+    for(let i=0;i<SYMPTOMS.length;i++) symptoms.append(this._button(SYMPTOMS[i],()=>this._toggleSymptom(i+1),false,this._symptoms.has(SYMPTOMS[i])));
     const save=document.createElement("div");save.className="row";save.style.marginTop="12px";card.append(save);
     save.append(this._button(this._t("record"),async()=>{
       await this._call("record_pain",{intensity:this._intensity,zones:[...this._zones].sort((a,b)=>a-b),symptoms:[...this._symptoms]});
