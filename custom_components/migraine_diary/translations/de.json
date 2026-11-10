@@ -1,0 +1,10 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Migränetagebuch",
+        "description": "Kopfschmerztagebuch einrichten"
+      }
+    }
+  }
+}
