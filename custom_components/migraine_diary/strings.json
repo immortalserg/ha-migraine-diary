@@ -1,0 +1,10 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Migraine Diary",
+        "description": "Set up your headache diary"
+      }
+    }
+  }
+}
