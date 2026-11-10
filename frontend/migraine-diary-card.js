@@ -54,7 +54,7 @@ class MigraineDiaryCard extends HTMLElement {
   }
   async _toggleSymptom(i){
     if(!this._config.use_ha_helpers){const name=SYMPTOMS[i-1];this._symptoms.has(name)?this._symptoms.delete(name):this._symptoms.add(name);this._render();return;}
-    await this._hass.callService("input_boolean","toggle",{entity_id:"switch.migrene_sypptome"+i});
+    await this._hass.callService("switch","toggle",{entity_id:"switch.migrene_sypptome"+i});
   }
   async _setLevel(i){
     if(!this._config.use_ha_helpers){this._intensity=i;this._render();return;}
@@ -162,6 +162,11 @@ class MigraineDiaryCard extends HTMLElement {
       .map .selected-zone{fill:rgba(220,65,65,.55)!important;stroke:#d33!important;stroke-width:1.4!important}
       .message{color:var(--error-color);margin-top:8px}
       .status{opacity:.8;margin:8px 0}
+      .symptom-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+      .symptom-btn{height:60px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:6px 3px;border-radius:8px;background:rgb(0,255,0);color:#111;border:1px solid rgba(0,0,0,.16)}
+      .symptom-btn.selected{background:rgb(255,0,0);color:#fff}
+      .symptom-btn ha-icon{--mdc-icon-size:20px;width:20px;height:20px;flex:none}
+      .symptom-btn span{font-size:10px;line-height:1.12;white-space:normal;text-align:center;overflow-wrap:anywhere}
       `;
     root.append(style);
     const card=document.createElement("ha-card");root.append(card);
@@ -205,8 +210,23 @@ class MigraineDiaryCard extends HTMLElement {
     const levels=document.createElement("div");levels.className="row";card.append(levels);
     if(!this._svgLoaded) for(let i=1;i<=9;i++)levels.append(this._button(String(i),()=>this._setLevel(i),false,this._intensity===i));
     const symptomHeading=document.createElement("h3");symptomHeading.textContent=this._t("symptoms");card.append(symptomHeading);
-    const symptoms=document.createElement("div");symptoms.className="row";card.append(symptoms);
-    for(let i=0;i<SYMPTOMS.length;i++) symptoms.append(this._button(SYMPTOMS[i],()=>this._toggleSymptom(i+1),false,this._symptoms.has(SYMPTOMS[i])));
+    const symptoms=document.createElement("div");symptoms.className="symptom-grid";card.append(symptoms);
+    for(let i=0;i<SYMPTOMS.length;i++){
+      const btn=document.createElement("button");btn.type="button";btn.className="symptom-btn";
+      const enabled=this._symptoms.has(SYMPTOMS[i]);
+      if(enabled)btn.classList.add("selected");
+      btn.setAttribute("aria-pressed",String(enabled));btn.disabled=this._busy;
+      const icon=document.createElement("ha-icon");icon.setAttribute("icon","mdi:head-flash");
+      const label=document.createElement("span");label.textContent=SYMPTOMS[i];
+      btn.append(icon,label);
+      btn.addEventListener("click",async()=>{
+        btn.disabled=true;
+        try{await this._toggleSymptom(i+1);}
+        catch(error){this._message=this._t("error")+": "+(error?.message || String(error));this._render();}
+        finally{btn.disabled=false;}
+      });
+      symptoms.append(btn);
+    }
     const save=document.createElement("div");save.className="row";save.style.marginTop="12px";card.append(save);
     save.append(this._button(this._t("record"),async()=>{
       await this._call("record_pain",{intensity:this._intensity,zones:[...this._zones].sort((a,b)=>a-b),symptoms:[...this._symptoms]});
