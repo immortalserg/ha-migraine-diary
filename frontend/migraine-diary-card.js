@@ -27,9 +27,9 @@ class MigraineDiaryCard extends HTMLElement {
     this._hass=hass;
     const entity=hass?.states?.[this._config?.active_entity || "binary_sensor.migren"];
     if(this._config?.use_ha_helpers){
-      this._zones=new Set(Array.from({length:19},(_,i)=>i+1).filter(i=>hass?.states?.["input_boolean.migraine_zone_"+i]?.state==="on"));
-      this._symptoms=new Set(SYMPTOMS.filter((_,i)=>hass?.states?.["input_boolean.migrene_sypptome"+(i+1)]?.state==="on"));
-      const level=Number(hass?.states?.["input_number.migraine_level"]?.state);
+      this._zones=new Set(Array.from({length:19},(_,i)=>i+1).filter(i=>hass?.states?.["switch.migraine_zone_"+i]?.state==="on"));
+      this._symptoms=new Set(SYMPTOMS.filter((_,i)=>hass?.states?.["switch.migrene_sypptome"+(i+1)]?.state==="on"));
+      const level=Number(hass?.states?.["number.migraine_level"]?.state);
       if(Number.isInteger(level)&&level>=1&&level<=9)this._intensity=level;
     }else{
       const assessment=entity?.attributes?.latest_pain;
@@ -49,16 +49,16 @@ class MigraineDiaryCard extends HTMLElement {
   getCardSize(){return 9;}
   async _toggleZone(i){
     if(!this._config.use_ha_helpers){this._zones.has(i)?this._zones.delete(i):this._zones.add(i);this._render();return;}
-    const entity_id="input_boolean.migraine_zone_"+i;
-    await this._hass.callService("input_boolean","toggle",{entity_id});
+    const entity_id="switch.migraine_zone_"+i;
+    await this._hass.callService("switch","toggle",{entity_id});
   }
   async _toggleSymptom(i){
     if(!this._config.use_ha_helpers){const name=SYMPTOMS[i-1];this._symptoms.has(name)?this._symptoms.delete(name):this._symptoms.add(name);this._render();return;}
-    await this._hass.callService("input_boolean","toggle",{entity_id:"input_boolean.migrene_sypptome"+i});
+    await this._hass.callService("input_boolean","toggle",{entity_id:"switch.migrene_sypptome"+i});
   }
   async _setLevel(i){
     if(!this._config.use_ha_helpers){this._intensity=i;this._render();return;}
-    await this._hass.callService("input_number","set_value",{entity_id:"input_number.migraine_level",value:i});
+    await this._hass.callService("number","set_value",{entity_id:"number.migraine_level",value:i});
   }
   _draftKey(){
     return "migraine-diary:draft:"+this._config.profile_id+":"+(this._config.active_entity || "binary_sensor.migren");
