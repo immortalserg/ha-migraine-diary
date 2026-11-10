@@ -200,7 +200,15 @@ class MigraineDiaryCard extends HTMLElement {
         const node=holder.querySelector("#b"+i);
         if(!node)continue;
         node.style.cursor="pointer";
-        if(this._intensity===i){node.style.stroke="var(--primary-color, #f44336)";node.style.strokeWidth="2.8px";}
+        if(this._intensity===i){
+          // Fill the selected intensity shape red; do not outline it.
+          node.style.setProperty("fill","#ff0000","important");
+          node.querySelectorAll("*").forEach(child=>{
+            if(child instanceof SVGElement && !["defs","clipPath","mask"].includes(child.localName)){
+              child.style.setProperty("fill","#ff0000","important");
+            }
+          });
+        }
         node.addEventListener("click",event=>{
           event.preventDefault();event.stopPropagation();
           this._setLevel(i);
