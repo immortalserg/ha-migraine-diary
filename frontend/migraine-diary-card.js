@@ -1,5 +1,5 @@
 /* Migraine Diary Lovelace card — initial prototype.
- * Resource: /local/migraine-diary-card.js
+ * Resource: /local/migraine-diary/migraine-diary-card.js
  * SVG: /local/migraine-diary/head.svg (bundled in frontend/head.svg).
  */
 const WORDS = {
@@ -29,9 +29,9 @@ class MigraineDiaryCard extends HTMLElement {
   }
   _t(key){return WORDS[this._language()][key] || key;}
   _active() {
-    const entity=this._config.active_entity || "sensor.active_episode";
+    const entity=this._config.active_entity || "binary_sensor.migren";
     const state=this._hass?.states?.[entity];
-    return !!state && state.state !== "none" && state.state !== "unknown" && state.state !== "unavailable";
+    return !!state && state.state === "on";
   }
   async _loadSvg(){
     try {
@@ -110,14 +110,24 @@ class MigraineDiaryCard extends HTMLElement {
           this._render();
         });
       }
+      for(let i=1;i<=9;i++){
+        const node=holder.querySelector("#b"+i);
+        if(!node)continue;
+        node.style.cursor="pointer";
+        if(this._intensity===i){node.style.stroke="var(--primary-color, #f44336)";node.style.strokeWidth="2.8px";}
+        node.addEventListener("click",event=>{
+          event.preventDefault();event.stopPropagation();
+          this._intensity=i;this._render();
+        });
+      }
       card.append(holder);
     }else{
       const fallback=document.createElement("div");fallback.className="row";card.append(fallback);
       for(let i=1;i<=19;i++)fallback.append(this._button(String(i),()=>{this._zones.has(i)?this._zones.delete(i):this._zones.add(i);this._render();},false,this._zones.has(i)));
     }
-    const intensity=document.createElement("h3");intensity.textContent=this._t("pain");card.append(intensity);
+    const intensity=document.createElement("h3");intensity.textContent=this._t("pain")+" (1–9): "+this._intensity;card.append(intensity);
     const levels=document.createElement("div");levels.className="row";card.append(levels);
-    for(let i=0;i<=10;i++)levels.append(this._button(String(i),()=>{this._intensity=i;this._render();},false,this._intensity===i));
+    if(!this._svgLoaded) for(let i=1;i<=9;i++)levels.append(this._button(String(i),()=>{this._intensity=i;this._render();},false,this._intensity===i));
     const symptomHeading=document.createElement("h3");symptomHeading.textContent=this._t("symptoms");card.append(symptomHeading);
     const symptoms=document.createElement("div");symptoms.className="row";card.append(symptoms);
     for(const key of SYMPTOMS) symptoms.append(this._button(this._t(key),()=>{this._symptoms.has(key)?this._symptoms.delete(key):this._symptoms.add(key);this._render();},false,this._symptoms.has(key)));
