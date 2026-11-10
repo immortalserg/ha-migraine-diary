@@ -108,5 +108,27 @@
     "blurred_vision": "Vista offuscata",
     "fatigue": "Stanchezza",
     "notes": "Note"
+  },
+  "lb": {
+    "config_title": "Migränendagbuch",
+    "config_description": "Richt däin Dagbuch fir Kappwéi an",
+    "episode_start": "Ufall ufänken",
+    "episode_end": "Ufall ofschléissen",
+    "premonition": "Virzeechen",
+    "pain_intensity": "Schmäerzintensitéit",
+    "symptoms": "Symptomer",
+    "medications": "Medikamenter",
+    "food_diary": "Iessdagbuch",
+    "calendar": "Kalenner",
+    "report": "Rapport",
+    "nausea": "Iwwelzegkeet",
+    "vomiting": "Erbriechen",
+    "photophobia": "Liichtempfindlechkeet",
+    "phonophobia": "Kaméidiempfindlechkeet",
+    "dizziness": "Schwindel",
+    "neck_pain": "Halswéi",
+    "blurred_vision": "Onschaarf Siicht",
+    "fatigue": "Middegkeet",
+    "notes": "Notizen"
   }
 }
