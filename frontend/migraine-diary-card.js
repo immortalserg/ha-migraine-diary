@@ -17,6 +17,7 @@ class MigraineDiaryCard extends HTMLElement {
     if (!Array.isArray(this._config.medications)) throw new Error("medications must be an array");
     this._zones = new Set(); this._symptoms = new Set(); this._intensity = 5;
     this._loadedAssessmentKey = null;
+    this._draftRestoredKey = null;
     this._busy = false; this._svgLoaded = false;
     if(!this.shadowRoot)this.attachShadow({mode:"open"});
     this._loadSvg();
@@ -27,7 +28,7 @@ class MigraineDiaryCard extends HTMLElement {
     const entity=hass?.states?.[this._config?.active_entity || "binary_sensor.migren"];
     const assessment=entity?.attributes?.latest_pain;
     const key=entity?.state==="on" ? entity?.attributes?.episode_id + ":" + (assessment?.occurred_at || "none") : "off";
-    if(key !== this._loadedAssessmentKey && this._pendingAssessment !== key){
+    if(key !== this._loadedAssessmentKey){
       this._loadedAssessmentKey=key;
       if(assessment && entity?.state==="on"){
         this._zones=new Set(Array.isArray(assessment.zones)?assessment.zones:[]);
@@ -37,10 +38,39 @@ class MigraineDiaryCard extends HTMLElement {
         this._zones.clear();this._symptoms.clear();this._intensity=5;
       }
     }
+    this._restoreDraft(key);
     if(this._pendingActive !== undefined && this._entityActive() === this._pendingActive) this._pendingActive=undefined;
     if(this.shadowRoot)this._render();
   }
   getCardSize(){return 9;}
+  _draftKey(){
+    return "migraine-diary:draft:"+this._config.profile_id+":"+(this._config.active_entity || "binary_sensor.migren");
+  }
+  _saveDraft(){
+    try {
+      const entity=this._hass?.states?.[this._config.active_entity || "binary_sensor.migren"];
+      const episodeId=entity?.attributes?.episode_id;
+      if(entity?.state!=="on" || !episodeId)return;
+      localStorage.setItem(this._draftKey(),JSON.stringify({
+        episode_id:episodeId,zones:[...this._zones],symptoms:[...this._symptoms],intensity:this._intensity
+      }));
+    } catch(_error){}
+  }
+  _restoreDraft(key){
+    if(this._draftRestoredKey===key)return;
+    this._draftRestoredKey=key;
+    try {
+      const entity=this._hass?.states?.[this._config.active_entity || "binary_sensor.migren"];
+      if(entity?.state==="off"){localStorage.removeItem(this._draftKey());return;}
+      if(entity?.state!=="on" || !entity?.attributes?.episode_id)return;
+      const draft=JSON.parse(localStorage.getItem(this._draftKey()) || "null");
+      if(!draft || draft.episode_id!==entity.attributes.episode_id)return;
+      this._zones=new Set((draft.zones || []).filter(n=>Number.isInteger(n)&&n>=1&&n<=19));
+      this._symptoms=new Set((draft.symptoms || []).filter(s=>SYMPTOMS.includes(s)));
+      if(Number.isInteger(draft.intensity)&&draft.intensity>=1&&draft.intensity<=9)this._intensity=draft.intensity;
+    }catch(_error){}
+  }
+
   _language() {
     const lang=(this._config.language || this._hass?.locale?.language || this._hass?.language || "en").toLowerCase().split("-")[0];
     return WORDS[lang] ? lang : "en";
@@ -137,7 +167,7 @@ class MigraineDiaryCard extends HTMLElement {
         node.addEventListener("click",event=>{
           event.preventDefault();event.stopPropagation();
           if(this._zones.has(i))this._zones.delete(i);else this._zones.add(i);
-          this._render();
+          this._saveDraft();this._render();
         });
       }
       for(let i=1;i<=9;i++){
@@ -147,20 +177,20 @@ class MigraineDiaryCard extends HTMLElement {
         if(this._intensity===i){node.style.stroke="var(--primary-color, #f44336)";node.style.strokeWidth="2.8px";}
         node.addEventListener("click",event=>{
           event.preventDefault();event.stopPropagation();
-          this._intensity=i;this._render();
+          this._intensity=i;this._saveDraft();this._render();
         });
       }
       card.append(holder);
     }else{
       const fallback=document.createElement("div");fallback.className="row";card.append(fallback);
-      for(let i=1;i<=19;i++)fallback.append(this._button(String(i),()=>{this._zones.has(i)?this._zones.delete(i):this._zones.add(i);this._render();},false,this._zones.has(i)));
+      for(let i=1;i<=19;i++)fallback.append(this._button(String(i),()=>{this._zones.has(i)?this._zones.delete(i):this._zones.add(i);this._saveDraft();this._render();},false,this._zones.has(i)));
     }
     const intensity=document.createElement("h3");intensity.textContent=this._t("pain")+" (1–9): "+this._intensity;card.append(intensity);
     const levels=document.createElement("div");levels.className="row";card.append(levels);
-    if(!this._svgLoaded) for(let i=1;i<=9;i++)levels.append(this._button(String(i),()=>{this._intensity=i;this._render();},false,this._intensity===i));
+    if(!this._svgLoaded) for(let i=1;i<=9;i++)levels.append(this._button(String(i),()=>{this._intensity=i;this._saveDraft();this._render();},false,this._intensity===i));
     const symptomHeading=document.createElement("h3");symptomHeading.textContent=this._t("symptoms");card.append(symptomHeading);
     const symptoms=document.createElement("div");symptoms.className="row";card.append(symptoms);
-    for(const key of SYMPTOMS) symptoms.append(this._button(this._t(key),()=>{this._symptoms.has(key)?this._symptoms.delete(key):this._symptoms.add(key);this._render();},false,this._symptoms.has(key)));
+    for(const key of SYMPTOMS) symptoms.append(this._button(this._t(key),()=>{this._symptoms.has(key)?this._symptoms.delete(key):this._symptoms.add(key);this._saveDraft();this._render();},false,this._symptoms.has(key)));
     const save=document.createElement("div");save.className="row";save.style.marginTop="12px";card.append(save);
     save.append(this._button(this._t("record"),async()=>{
       await this._call("record_pain",{intensity:this._intensity,zones:[...this._zones].sort((a,b)=>a-b),symptoms:[...this._symptoms]});
