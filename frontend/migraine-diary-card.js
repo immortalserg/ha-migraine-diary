@@ -13,7 +13,12 @@ const WORDS = {
 const SYMPTOMS=["Сильная ударная боль","Пульсирующая боль","Пульсирующая периодическая боль","Усиливается при движении","Тошнота","Рвота","Светочувствительность","Чувствительность к шуму","Боль в шее","Головокружение","Насморк","Бессонница","Подавленное настроение","Тревожность","Чувствительность к запахам","Жар / ощущение жара","Звон в ушах","Усталость","Расплывчатое зрение","Перепады настроения"];
 class MigraineDiaryCard extends HTMLElement {
   setConfig(config) {
-    this._config = {use_ha_helpers:true, profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], ...config};
+    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], ...config};
+    for(const key of ["button_font_size","button_icon_size","action_font_size","action_icon_size"]){
+      const value=Number(this._config[key]);
+      if(!Number.isFinite(value)||value<6||value>64)throw new Error(key+" must be 6–64 pixels");
+      this._config[key]=value;
+    }
     if (!Array.isArray(this._config.medications)) throw new Error("medications must be an array");
     this._zones = new Set(); this._symptoms = new Set(); this._intensity = 5;
     this._loadedAssessmentKey = null;
@@ -148,12 +153,12 @@ class MigraineDiaryCard extends HTMLElement {
     if(!this.shadowRoot || !this._config)return;
     const root=this.shadowRoot;root.replaceChildren();
     const style=document.createElement("style");style.textContent=`
-      :host{display:block;color:var(--primary-text-color)}
+      :host{display:block;color:var(--primary-text-color);--diary-button-font:${this._config.button_font_size}px;--diary-button-icon:${this._config.button_icon_size}px;--diary-action-font:${this._config.action_font_size}px;--diary-action-icon:${this._config.action_icon_size}px}
       ha-card{display:block;padding:16px}
       h2{font-size:1.2rem;margin:0 0 12px}
       h3{font-size:1rem;margin:14px 0 8px}
       .row{display:flex;gap:6px;flex-wrap:wrap}
-      button{background:var(--secondary-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:8px;padding:9px;cursor:pointer}
+      button{font-size:var(--diary-action-font);background:var(--secondary-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:8px;padding:9px;cursor:pointer}
       button.selected{background:var(--primary-color);color:var(--text-primary-color,#fff)}
       button:disabled{opacity:.4;cursor:not-allowed}
       .map{max-width:480px;margin:auto}
@@ -162,11 +167,15 @@ class MigraineDiaryCard extends HTMLElement {
       .map .selected-zone{fill:rgba(220,65,65,.55)!important;stroke:#d33!important;stroke-width:1.4!important}
       .message{color:var(--error-color);margin-top:8px}
       .status{opacity:.8;margin:8px 0}
+      .medication-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+      .medication-btn{background:var(--secondary-background-color);color:var(--primary-text-color)}
+      .medication-btn ha-icon{--mdc-icon-size:var(--diary-button-icon);width:var(--diary-button-icon);height:var(--diary-button-icon)}
       .symptom-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+      .symptom-btn,.medication-btn{height:60px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:6px 3px;border-radius:8px}
       .symptom-btn{height:60px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:6px 3px;border-radius:8px;background:rgb(0,255,0);color:#111;border:1px solid rgba(0,0,0,.16)}
       .symptom-btn.selected{background:rgb(255,0,0);color:#fff}
-      .symptom-btn ha-icon{--mdc-icon-size:20px;width:20px;height:20px;flex:none}
-      .symptom-btn span{font-size:10px;line-height:1.12;white-space:normal;text-align:center;overflow-wrap:anywhere}
+      .symptom-btn ha-icon{--mdc-icon-size:var(--diary-button-icon);width:var(--diary-button-icon);height:var(--diary-button-icon);flex:none}
+      .symptom-btn span,.medication-btn span{font-size:var(--diary-button-font);line-height:1.12;white-space:normal;text-align:center;overflow-wrap:anywhere}
       `;
     root.append(style);
     const card=document.createElement("ha-card");root.append(card);
@@ -241,14 +250,19 @@ class MigraineDiaryCard extends HTMLElement {
       symptoms.append(btn);
     }
     const medications=document.createElement("h3");medications.textContent=this._t("medications");card.append(medications);
-    const pills=document.createElement("div");pills.className="row";card.append(pills);
+    const pills=document.createElement("div");pills.className="medication-grid";card.append(pills);
     for(const med of this._config.medications){
       const name=typeof med==="string"?med:med.name;
       const dose=typeof med==="string"?{}:{dose:med.dose,unit:med.unit};
       const payload={name};
       if(dose.dose!==undefined)payload.dose=dose.dose;
       if(dose.unit!==undefined)payload.unit=dose.unit;
-      pills.append(this._button(name,()=>this._call("record_medication",payload)));
+      const btn=document.createElement("button");btn.type="button";btn.className="medication-btn";btn.disabled=this._busy;
+      const icon=document.createElement("ha-icon");icon.setAttribute("icon","mdi:pill");
+      const label=document.createElement("span");label.textContent=name;
+      btn.append(icon,label);
+      btn.addEventListener("click",()=>this._call("record_medication",payload));
+      pills.append(btn);
     }
     if(this._message){const msg=document.createElement("div");msg.className="message";msg.textContent=this._message;card.append(msg);}
   }
