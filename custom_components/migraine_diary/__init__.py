@@ -10,7 +10,7 @@ from .services import register_services, unregister_services
 from .storage import DiaryStore
 
 DOMAIN = "migraine_diary"
-PLATFORMS = ["sensor", "binary_sensor"]
+PLATFORMS = ["sensor", "binary_sensor", "switch", "number"]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
