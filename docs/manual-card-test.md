@@ -1,19 +1,23 @@
-# Prototype Lovelace card — manual test installation
+# Migraine Diary — manual Home Assistant test
 
-**Development build only.** Do not use this as the sole medical record. Back up your Home Assistant configuration first.
+**Development prototype:** back up your HA configuration before installing. Do not rely on this as the sole medical record.
 
-1. Copy `custom_components/migraine_diary/` from this repository to `<config>/custom_components/migraine_diary/`.
-2. Copy `frontend/migraine-diary-card.js` to `<config>/www/migraine-diary-card.js`.
-3. Copy your original `m12.svg` into `<config>/www/floorplan/m12.svg` (the original SVG is not yet bundled in the repository).
-4. Restart Home Assistant and add the **Migraine Diary** integration in Settings → Devices & services.
-5. In Dashboard → Edit dashboard → Manage resources, add `/local/migraine-diary-card.js` as a **JavaScript module**.
-6. Add a manual card:
+## Copy files
+
+1. Copy the repository directory `custom_components/migraine_diary/` to `/config/custom_components/migraine_diary/` in Home Assistant.
+2. Create `/config/www/migraine-diary/` (a dedicated directory; **no floorplan dependency**).
+3. Copy `frontend/migraine-diary-card.js` to `/config/www/migraine-diary/migraine-diary-card.js`.
+4. Copy `frontend/head.svg` to `/config/www/migraine-diary/head.svg`.
+5. Restart Home Assistant. Go to **Settings → Devices & services → Add integration** and select **Migraine Diary**.
+6. In your dashboard, select **Edit → Manage resources**, then add `/local/migraine-diary/migraine-diary-card.js` as a **JavaScript module**.
+7. Add a **Manual** card with this YAML:
 
 ```yaml
 type: custom:migraine-diary-card
 profile_id: patient
 active_entity: sensor.active_episode
-svg_url: /local/floorplan/m12.svg
+svg_url: /local/migraine-diary/head.svg
+language: lb
 medications:
   - name: Maxalt
     dose: 10
@@ -23,16 +27,26 @@ medications:
   - Migreaout
 ```
 
-The actual sensor entity ID may differ; check Settings → Devices & services → Entities.
+The actual sensor entity ID may differ; check Settings → Devices & services → Entities and update `active_entity` accordingly.
 
-The card uses the Home Assistant user's language (en, ru, fr, de, it). You can override it with `language: fr`, for example.
+## Language
 
-## Prototype limitations
+The card supports `en`, `ru`, `fr`, `de`, `it`, and `lb` (Luxembourgish). Remove `language: lb` to follow the current Home Assistant user's language.
 
-- The card records pain intensity and selected SVG zones only while an episode is active.
-- Symptom selections are currently UI-only, except when included in a premonition event; they are **not** saved as part of episode start or pain events. This must be fixed before clinical use.
-- Medication names and optional doses are configured in YAML, not yet editable in the UI.
-- The active episode sensor polls every 30 seconds; the card may show stale button state briefly after an action.
-- Food diary, reports, editable catalogs, and episode editing are not implemented.
-- Five languages are present for this prototype card; full translations of services and future reports remain to be completed.
-- The integration has not yet been validated on a running Home Assistant instance.
+## Quick test
+
+1. Verify the SVG appears and click two head zones.
+2. Start an episode and wait up to 30 seconds for the sensor to refresh.
+3. Select pain intensity and click **Schmäerz späicheren**.
+4. Record a medication.
+5. End the episode and verify the sensor becomes `none`.
+
+If the sensor does not appear, or a service fails, inspect Settings → System → Logs.
+
+## Known limitations
+
+- The prototype has not been tested in a running Home Assistant instance.
+- Symptoms selected in the UI are not yet stored with episodes or pain events. Premonition selections are stored.
+- Medication names/doses are configured in YAML, not edited in the UI.
+- The sensor polls every 30 seconds; action buttons may briefly show the old state.
+- Reports, food diary, and editable catalogs are not yet implemented.
