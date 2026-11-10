@@ -7,8 +7,6 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from .services import SIGNAL_RECORD_SAVED
 
 from . import DOMAIN
 from .storage import DiaryStore
@@ -75,11 +73,14 @@ class MigraineLastRecordSensor(SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        self.async_on_remove(async_dispatcher_connect(
-            self.hass, SIGNAL_RECORD_SAVED, self._on_saved
-        ))
+        self.hass.data[DOMAIN]["last_record_sensor"] = self
+        self.async_on_remove(self._unregister)
 
-    def _on_saved(self, event: dict) -> None:
+    def _unregister(self) -> None:
+        if self.hass.data.get(DOMAIN, {}).get("last_record_sensor") is self:
+            self.hass.data[DOMAIN].pop("last_record_sensor", None)
+
+    def update_from_saved_event(self, event: dict) -> None:
         """Publish the exact data passed after a successful database operation."""
         kind = event["event_type"]
         payload = event.get("payload", {})
