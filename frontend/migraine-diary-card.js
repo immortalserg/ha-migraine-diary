@@ -93,7 +93,7 @@ class MigraineDiaryCard extends HTMLElement {
     const status=document.createElement("div");status.className="status";status.textContent=this._t(active?"active":"noEpisode");card.append(status);
     const actions=document.createElement("div");actions.className="row";card.append(actions);
     actions.append(this._button(this._t("start"),()=>this._call("start_episode",{}),active));
-    actions.append(this._button(this._t("end"),()=>this._call("end_episode",{}),!active));
+    actions.append(this._button(this._t("end"),()=>this._call("end_episode",{episode_id:this._hass?.states?.[this._config.active_entity || "binary_sensor.migren"]?.attributes?.episode_id}),!active));
     actions.append(this._button(this._t("premonition"),()=>this._call("record_premonition",{symptoms:[...this._symptoms]})));
     const zonesHeading=document.createElement("h3");zonesHeading.textContent=this._t("zones");card.append(zonesHeading);
     if(this._svgLoaded){
