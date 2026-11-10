@@ -8,6 +8,8 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.dispatcher import async_dispatcher_send
+from .binary_sensor import SIGNAL_EPISODE_CHANGED
 
 from .storage import DiaryStore
 
@@ -32,7 +34,7 @@ SCHEMAS = {
                                      vol.Optional("unit"): cv.string}),
     "record_pain": vol.Schema({PROFILE: cv.string, TIMESTAMP: cv.string,
                                EPISODE: cv.string,
-                               vol.Required("intensity"): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
+                               vol.Required("intensity"): vol.All(vol.Coerce(int), vol.Range(min=1, max=9)),
                                vol.Required("zones"): [vol.All(vol.Coerce(int), vol.Range(min=1, max=19))]}),
 }
 
@@ -51,12 +53,14 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                     headache_type=data.get("headache_type", "unspecified"),
                     notes=data.get("notes"),
                 )
+                async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
                 return {"episode_id": episode_id}
             if name == "end_episode":
                 active = await store.get_active_episode(profile_id)
                 if active is None:
                     raise ValueError("No active episode for profile")
                 await store.end_episode(active["id"], ended_at=data.get("ended_at"))
+                async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
                 return {"episode_id": active["id"]}
             active = await store.get_active_episode(profile_id)
             episode_id = data.pop("episode_id", None)
