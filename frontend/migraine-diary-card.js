@@ -17,22 +17,27 @@ class MigraineDiaryCard extends HTMLElement {
     if (!Array.isArray(this._config.medications)) throw new Error("medications must be an array");
     this._zones = new Set(); this._symptoms = new Set(); this._intensity = 5;
     this._busy = false; this._svgLoaded = false;
-    this.attachShadow({mode:"open"});
+    if(!this.shadowRoot)this.attachShadow({mode:"open"});
     this._loadSvg();
     this._render();
   }
-  set hass(hass) {this._hass=hass; if (this.shadowRoot) this._render();}
+  set hass(hass) {
+    this._hass=hass;
+    if(this._pendingActive !== undefined && this._entityActive() === this._pendingActive) this._pendingActive=undefined;
+    if(this.shadowRoot)this._render();
+  }
   getCardSize(){return 9;}
   _language() {
     const lang=(this._config.language || this._hass?.locale?.language || this._hass?.language || "en").toLowerCase().split("-")[0];
     return WORDS[lang] ? lang : "en";
   }
   _t(key){return WORDS[this._language()][key] || key;}
-  _active() {
+  _entityActive() {
     const entity=this._config.active_entity || "binary_sensor.migren";
     const state=this._hass?.states?.[entity];
     return !!state && state.state === "on";
   }
+  _active(){return this._pendingActive !== undefined ? this._pendingActive : this._entityActive();}
   async _loadSvg(){
     try {
       const response=await fetch(this._config.svg_url,{credentials:"same-origin"});
@@ -63,8 +68,19 @@ class MigraineDiaryCard extends HTMLElement {
   async _call(service,data) {
     if(this._busy || !this._hass) return;
     this._busy=true;this._message="";this._render();
-    try {await this._hass.callService("migraine_diary",service,{profile_id:this._config.profile_id,...data});}
-    catch(e){this._message=this._t("error")+": "+(e?.message || String(e));}
+    try {
+      await this._hass.callService("migraine_diary",service,{profile_id:this._config.profile_id,...data});
+      // Update controls as soon as HA confirms the action; do not wait for
+      // the state_changed websocket event (which may arrive seconds later).
+      if(service==="start_episode" || service==="end_episode"){
+        this._pendingActive=service==="start_episode";
+        if(this._entityActive()===this._pendingActive)this._pendingActive=undefined;
+      }
+    }
+    catch(e){
+      this._pendingActive=undefined;
+      this._message=this._t("error")+": "+(e?.message || String(e));
+    }
     finally {this._busy=false;this._render();}
   }
   _render(){
