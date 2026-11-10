@@ -26,13 +26,14 @@ def _notify_record_saved(hass: HomeAssistant, event: dict) -> None:
     else:
         _LOGGER.warning("Last-record sensor not registered for saved event %s", event["event_id"])
 
-SERVICE_NAMES = ("start_episode", "end_episode", "record_premonition", "record_medication", "record_pain")
+SERVICE_NAMES = ("start_episode", "end_episode", "record_premonition", "record_medication", "record_pain", "list_history")
 
 PROFILE = vol.Required("profile_id")
 TIMESTAMP = vol.Optional("occurred_at")
 EPISODE = vol.Optional("episode_id")
 
 SCHEMAS = {
+    "list_history": vol.Schema({PROFILE: cv.string, vol.Optional("limit", default=200): vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)), vol.Optional("start"): cv.string, vol.Optional("end"): cv.string}),
     "start_episode": vol.Schema({PROFILE: cv.string, vol.Optional("started_at"): cv.string,
                                   vol.Optional("headache_type", default="unspecified"): cv.string,
                                   vol.Optional("notes"): cv.string}),
@@ -75,6 +76,8 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
         data = dict(call.data)
         profile_id = data.pop("profile_id")
         try:
+            if name == "list_history":
+                return {"records": await store.list_history(profile_id, limit=data.get("limit", 200), start=data.get("start"), end=data.get("end"))}
             if name == "start_episode":
                 episode_id, created = await store.ensure_active_episode(
                     profile_id, started_at=data.get("started_at"),
@@ -144,7 +147,7 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
         hass.services.async_register(
             DOMAIN, name, handle,
             schema=SCHEMAS[name],
-            supports_response=SupportsResponse.OPTIONAL,
+            supports_response=SupportsResponse.ONLY if name == "list_history" else SupportsResponse.OPTIONAL,
         )
 
 
