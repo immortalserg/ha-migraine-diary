@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 import sqlite3
 
 import voluptuous as vol
@@ -15,6 +16,7 @@ from .storage import DiaryStore
 
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = "migraine_diary"
+SIGNAL_RECORD_SAVED = "migraine_diary_record_saved"
 SERVICE_NAMES = ("start_episode", "end_episode", "record_premonition", "record_medication", "record_pain")
 
 PROFILE = vol.Required("profile_id")
@@ -87,6 +89,13 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 profile_id, name.removeprefix("record_"), payload,
                 episode_id=episode_id, occurred_at=occurred_at,
             )
+            async_dispatcher_send(hass, SIGNAL_RECORD_SAVED, {
+                "event_id": event_id,
+                "episode_id": episode_id,
+                "event_type": name.removeprefix("record_"),
+                "payload": payload,
+                "saved_at": datetime.now(timezone.utc).isoformat(),
+            })
             if name == "record_pain":
                 async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
             return {"event_id": event_id}
