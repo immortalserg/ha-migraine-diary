@@ -1,0 +1,10 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Diario dell'emicrania",
+        "description": "Configura il diario del mal di testa"
+      }
+    }
+  }
+}
