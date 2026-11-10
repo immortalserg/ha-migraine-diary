@@ -79,6 +79,41 @@ class DiaryStore:
             await asyncio.to_thread(self._run, op)
         return episode_id
 
+    async def ensure_active_episode(
+        self, profile_id: str, *, started_at: str | None = None,
+        headache_type: str = "unspecified", notes: str | None = None
+    ) -> tuple[str, bool]:
+        """Return the existing episode or create one atomically.
+
+        A repeated start request never overwrites the original start time.
+        """
+        proposed_id = str(uuid4())
+        started_at = _iso(started_at)
+        async with self._lock:
+            def op(conn):
+                existing = conn.execute(
+                    "SELECT id FROM episodes WHERE profile_id=? AND ended_at IS NULL",
+                    (profile_id,),
+                ).fetchone()
+                if existing is not None:
+                    return existing["id"], False
+                try:
+                    conn.execute(
+                        "INSERT INTO episodes(id,profile_id,started_at,headache_type,notes) VALUES(?,?,?,?,?)",
+                        (proposed_id, profile_id, started_at, headache_type, notes),
+                    )
+                except sqlite3.IntegrityError:
+                    # Do not mask missing profiles or unrelated integrity errors.
+                    existing = conn.execute(
+                        "SELECT id FROM episodes WHERE profile_id=? AND ended_at IS NULL",
+                        (profile_id,),
+                    ).fetchone()
+                    if existing is None:
+                        raise
+                    return existing["id"], False
+                return proposed_id, True
+            return await asyncio.to_thread(self._run, op)
+
     async def end_episode(self, episode_id: str, *, ended_at: str | None = None) -> None:
         ended_at = _iso(ended_at)
         async with self._lock:
