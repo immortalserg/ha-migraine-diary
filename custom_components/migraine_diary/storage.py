@@ -160,23 +160,6 @@ class DiaryStore:
             await asyncio.to_thread(self._run, op)
         return event_id
 
-    async def get_last_record(self, profile_id: str) -> dict | None:
-        """Read the last committed event from SQLite, including ended episodes."""
-        def op(conn):
-            row = conn.execute(
-                """SELECT e.id, e.episode_id, e.event_type, e.occurred_at,
-                          e.recorded_at, e.payload_json
-                   FROM events e WHERE e.profile_id=?
-                   ORDER BY e.recorded_at DESC, e.rowid DESC LIMIT 1""",
-                (profile_id,),
-            ).fetchone()
-            if row is None:
-                return None
-            result = dict(row)
-            result["payload"] = json.loads(result.pop("payload_json"))
-            return result
-        return await asyncio.to_thread(self._run, op)
-
     async def get_latest_pain(self, profile_id: str) -> dict | None:
         """Latest saved pain assessment for the currently active episode."""
         def op(conn):
