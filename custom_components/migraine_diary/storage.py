@@ -193,3 +193,47 @@ class DiaryStore:
                 (profile_id, limit),
             )]
         return await asyncio.to_thread(self._run, op)
+
+    async def list_history(
+        self, profile_id: str, *, limit: int = 200,
+        start: str | None = None, end: str | None = None
+    ) -> list[dict]:
+        """Read a bounded timeline of episodes and events, newest first."""
+        if not 1 <= limit <= 1000:
+            raise ValueError("History limit must be between 1 and 1000")
+        start_at = _iso(start) if start else None
+        end_at = _iso(end) if end else None
+        if start_at and end_at and start_at > end_at:
+            raise ValueError("History start must not exceed end")
+
+        def op(conn):
+            conditions = ["profile_id=?"]
+            args = [profile_id]
+            if start_at:
+                conditions.append("occurred_at>=?")
+                args.append(start_at)
+            if end_at:
+                conditions.append("occurred_at<=?")
+                args.append(end_at)
+            events = conn.execute(
+                "SELECT id,episode_id,event_type,occurred_at,recorded_at,payload_json "
+                "FROM events WHERE " + " AND ".join(conditions) +
+                " ORDER BY occurred_at DESC, recorded_at DESC LIMIT ?",
+                (*args, limit),
+            ).fetchall()
+            rows = []
+            for item in events:
+                payload = json.loads(item["payload_json"])
+                rows.append({
+                    "id": item["id"], "episode_id": item["episode_id"],
+                    "date": item["occurred_at"], "event": item["event_type"],
+                    "level": payload.get("intensity"),
+                    "zones": ", ".join(map(str, payload.get("zones", []))),
+                    "symptoms": ", ".join(map(str, payload.get("symptoms", []))),
+                    "medication": payload.get("name", ""),
+                    "dose": payload.get("dose"),
+                    "unit": payload.get("unit", ""),
+                })
+            return rows
+
+        return await asyncio.to_thread(self._run, op)
