@@ -102,8 +102,8 @@ class DiaryStore:
         if event_type == "pain":
             intensity = payload.get("intensity")
             zones = payload.get("zones")
-            if not isinstance(intensity, int) or isinstance(intensity, bool) or not 0 <= intensity <= 10:
-                raise ValueError("Pain intensity must be an integer from 0 to 10")
+            if not isinstance(intensity, int) or isinstance(intensity, bool) or not 1 <= intensity <= 9:
+                raise ValueError("Pain intensity must be an integer from 1 to 9")
             if not isinstance(zones, list) or any(not isinstance(z, int) or isinstance(z, bool) or z < 1 or z > 19 for z in zones):
                 raise ValueError("Pain zones must be a list of zone numbers 1–19")
         event_id = str(uuid4())
