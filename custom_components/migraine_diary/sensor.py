@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from .binary_sensor import SIGNAL_EPISODE_CHANGED
+from .services import SIGNAL_RECORD_SAVED
 
 from . import DOMAIN
 from .storage import DiaryStore
@@ -50,43 +50,28 @@ class MigraineEpisodeSensor(SensorEntity):
             }
 
 class MigraineLastRecordSensor(SensorEntity):
-    """Readable view of the most recently committed SQLite event."""
+    """Show the latest successfully committed event, without reading SQLite."""
 
     _attr_has_entity_name = False
     _attr_name = "Migraine diary last record"
     _attr_icon = "mdi:database-check"
-    _attr_should_poll = True
+    _attr_should_poll = False
 
     def __init__(self, store: DiaryStore, entry_id: str) -> None:
-        self._store = store
         self._attr_unique_id = f"{entry_id}_last_record"
         self.entity_id = "sensor.migraine_diary_last_record"
-        self._attr_native_value = "Нет записей"
+        self._attr_native_value = "Нет новых записей"
         self._attr_extra_state_attributes = {}
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         self.async_on_remove(async_dispatcher_connect(
-            self.hass, SIGNAL_EPISODE_CHANGED, self._handle_change
+            self.hass, SIGNAL_RECORD_SAVED, self._on_saved
         ))
-        await self.async_update()
-        self.async_write_ha_state()
 
-    def _handle_change(self) -> None:
-        self.hass.async_create_task(self._refresh())
-
-    async def _refresh(self) -> None:
-        await self.async_update()
-        self.async_write_ha_state()
-
-    async def async_update(self) -> None:
-        record = await self._store.get_last_record("patient")
-        if record is None:
-            self._attr_native_value = "Нет записей"
-            self._attr_extra_state_attributes = {}
-            return
-        kind = record["event_type"]
-        payload = record["payload"]
+    def _on_saved(self, event: dict) -> None:
+        kind = event["event_type"]
+        payload = event["payload"]
         labels = {
             "pain": "Боль", "premonition": "Предчувствие",
             "medication": "Лекарство", "symptom": "Симптомы",
@@ -96,21 +81,25 @@ class MigraineLastRecordSensor(SensorEntity):
         self._attr_native_value = labels.get(kind, kind)
         attrs = {
             "тип_записи": labels.get(kind, kind),
-            "время_события": record["occurred_at"],
-            "время_сохранения": record["recorded_at"],
-            "приступ": record["episode_id"],
-            "id_записи": record["id"],
+            "время_сохранения": event["saved_at"],
+            "приступ": event.get("episode_id"),
+            "id_записи": event["event_id"],
         }
         if kind == "pain":
-            attrs["интенсивность"] = payload.get("intensity")
-            attrs["зоны_боли"] = payload.get("zones", [])
-            attrs["симптомы"] = payload.get("symptoms", [])
+            attrs.update({
+                "интенсивность": payload.get("intensity"),
+                "зоны_боли": payload.get("zones", []),
+                "симптомы": payload.get("symptoms", []),
+            })
         elif kind == "medication":
-            attrs["лекарство"] = payload.get("name")
-            attrs["дозировка"] = payload.get("dose")
-            attrs["единица"] = payload.get("unit")
+            attrs.update({
+                "лекарство": payload.get("name"),
+                "дозировка": payload.get("dose"),
+                "единица": payload.get("unit"),
+            })
         elif kind == "premonition":
             attrs["симптомы"] = payload.get("symptoms", [])
         else:
             attrs["данные"] = payload
         self._attr_extra_state_attributes = attrs
+        self.async_write_ha_state()
