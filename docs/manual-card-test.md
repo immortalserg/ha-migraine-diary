@@ -15,7 +15,7 @@
 ```yaml
 type: custom:migraine-diary-card
 profile_id: patient
-active_entity: sensor.active_episode
+active_entity: binary_sensor.migren
 svg_url: /local/migraine-diary/head.svg
 language: lb
 medications:
@@ -27,19 +27,19 @@ medications:
   - Migreaout
 ```
 
-The actual sensor entity ID may differ; check Settings → Devices & services → Entities and update `active_entity` accordingly.
+The actual binary sensor entity ID may differ; check Settings → Devices & services → Entities and update `active_entity` accordingly.
 
-## Language
+The binary sensor is read-only: use the start/end actions or the card to change the migraine state.\n\n## Language
 
 The card supports `en`, `ru`, `fr`, `de`, `it`, and `lb` (Luxembourgish). Remove `language: lb` to follow the current Home Assistant user's language.
 
 ## Quick test
 
 1. Verify the SVG appears and click two head zones.
-2. Start an episode and wait up to 30 seconds for the sensor to refresh.
-3. Select pain intensity and click **Schmäerz späicheren**.
+2. Start an episode and check that the binary sensor changes to on.
+3. Select intensity using the SVG b1–b9 controls and click **Schmäerz späicheren**.
 4. Record a medication.
-5. End the episode and verify the sensor becomes `none`.
+5. End the episode and verify the binary sensor becomes `off`.
 
 If the sensor does not appear, or a service fails, inspect Settings → System → Logs.
 
@@ -48,5 +48,5 @@ If the sensor does not appear, or a service fails, inspect Settings → System �
 - The prototype has not been tested in a running Home Assistant instance.
 - Symptoms selected in the UI are not yet stored with episodes or pain events. Premonition selections are stored.
 - Medication names/doses are configured in YAML, not edited in the UI.
-- The sensor polls every 30 seconds; action buttons may briefly show the old state.
+- The binary sensor is derived from SQLite and refreshes after successful start/end services; it is read-only.
 - Reports, food diary, and editable catalogs are not yet implemented.
