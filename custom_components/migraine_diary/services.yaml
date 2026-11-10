@@ -1,0 +1,93 @@
+start_episode:
+  name: Start headache episode
+  description: Start an episode for a profile.
+  fields:
+    profile_id:
+      required: true
+      example: "patient"
+      selector:
+        text:
+    started_at:
+      example: "2026-11-10T12:00:00+01:00"
+      selector:
+        text:
+    headache_type:
+      example: "unspecified"
+      selector:
+        text:
+    notes:
+      selector:
+        text:
+end_episode:
+  name: End headache episode
+  fields:
+    profile_id:
+      required: true
+      selector:
+        text:
+    ended_at:
+      selector:
+        text:
+record_premonition:
+  name: Record premonition
+  fields:
+    profile_id:
+      required: true
+      selector:
+        text:
+    symptoms:
+      selector:
+        object:
+    occurred_at:
+      selector:
+        text:
+record_medication:
+  name: Record medication
+  fields:
+    profile_id:
+      required: true
+      selector:
+        text:
+    name:
+      required: true
+      selector:
+        text:
+    dose:
+      selector:
+        number:
+          min: 0
+          max: 100000
+          step: any
+    unit:
+      selector:
+        text:
+    episode_id:
+      selector:
+        text:
+    occurred_at:
+      selector:
+        text:
+record_pain:
+  name: Record pain intensity and zones
+  fields:
+    profile_id:
+      required: true
+      selector:
+        text:
+    intensity:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 1
+    zones:
+      required: true
+      selector:
+        object:
+    episode_id:
+      selector:
+        text:
+    occurred_at:
+      selector:
+        text:
