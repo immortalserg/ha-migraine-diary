@@ -160,6 +160,22 @@ class DiaryStore:
             await asyncio.to_thread(self._run, op)
         return event_id
 
+    async def get_latest_pain(self, profile_id: str) -> dict | None:
+        """Latest saved pain assessment for the currently active episode."""
+        def op(conn):
+            row = conn.execute(
+                """SELECT e.payload_json, e.occurred_at
+                   FROM events e JOIN episodes ep ON ep.id=e.episode_id
+                   WHERE e.profile_id=? AND e.event_type='pain'
+                     AND ep.profile_id=? AND ep.ended_at IS NULL
+                   ORDER BY e.occurred_at DESC, e.recorded_at DESC LIMIT 1""",
+                (profile_id, profile_id),
+            ).fetchone()
+            if row is None:
+                return None
+            return {"occurred_at": row["occurred_at"], **json.loads(row["payload_json"])}
+        return await asyncio.to_thread(self._run, op)
+
     async def get_active_episode(self, profile_id: str) -> dict | None:
         def op(conn):
             row = conn.execute(
