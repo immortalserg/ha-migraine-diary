@@ -16,6 +16,7 @@ class MigraineDiaryCard extends HTMLElement {
     this._config = {profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], ...config};
     if (!Array.isArray(this._config.medications)) throw new Error("medications must be an array");
     this._zones = new Set(); this._symptoms = new Set(); this._intensity = 5;
+    this._loadedAssessmentKey = null;
     this._busy = false; this._svgLoaded = false;
     if(!this.shadowRoot)this.attachShadow({mode:"open"});
     this._loadSvg();
@@ -23,6 +24,19 @@ class MigraineDiaryCard extends HTMLElement {
   }
   set hass(hass) {
     this._hass=hass;
+    const entity=hass?.states?.[this._config?.active_entity || "binary_sensor.migren"];
+    const assessment=entity?.attributes?.latest_pain;
+    const key=entity?.state==="on" ? entity?.attributes?.episode_id + ":" + (assessment?.occurred_at || "none") : "off";
+    if(key !== this._loadedAssessmentKey && this._pendingAssessment !== key){
+      this._loadedAssessmentKey=key;
+      if(assessment && entity?.state==="on"){
+        this._zones=new Set(Array.isArray(assessment.zones)?assessment.zones:[]);
+        this._symptoms=new Set(Array.isArray(assessment.symptoms)?assessment.symptoms:[]);
+        this._intensity=assessment.intensity>=1 && assessment.intensity<=9 ? assessment.intensity : 5;
+      }else if(entity?.state==="off"){
+        this._zones.clear();this._symptoms.clear();this._intensity=5;
+      }
+    }
     if(this._pendingActive !== undefined && this._entityActive() === this._pendingActive) this._pendingActive=undefined;
     if(this.shadowRoot)this._render();
   }
@@ -149,8 +163,8 @@ class MigraineDiaryCard extends HTMLElement {
     for(const key of SYMPTOMS) symptoms.append(this._button(this._t(key),()=>{this._symptoms.has(key)?this._symptoms.delete(key):this._symptoms.add(key);this._render();},false,this._symptoms.has(key)));
     const save=document.createElement("div");save.className="row";save.style.marginTop="12px";card.append(save);
     save.append(this._button(this._t("record"),async()=>{
-      await this._call("record_pain",{intensity:this._intensity,zones:[...this._zones].sort((a,b)=>a-b)});
-      // Symptom persistence requires a dedicated service in the next milestone.
+      await this._call("record_pain",{intensity:this._intensity,zones:[...this._zones].sort((a,b)=>a-b),symptoms:[...this._symptoms]});
+      // The assessment is stored in SQLite and restored from sensor attributes.
     },!active));
     const medications=document.createElement("h3");medications.textContent=this._t("medications");card.append(medications);
     const pills=document.createElement("div");pills.className="row";card.append(pills);
