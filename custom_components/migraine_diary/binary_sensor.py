@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import DOMAIN
+DOMAIN = "migraine_diary"
 from .storage import DiaryStore
 
 SIGNAL_EPISODE_CHANGED = "migraine_diary_episode_changed"
