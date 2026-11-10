@@ -14,6 +14,16 @@ from . import DOMAIN
 from .storage import DiaryStore
 
 SCAN_INTERVAL = timedelta(seconds=30)
+SYMPTOM_NAMES = [
+    "Сильная ударная боль", "Пульсирующая боль",
+    "Пульсирующая периодическая боль", "Усиливается при движении",
+    "Тошнота", "Рвота", "Светочувствительность",
+    "Чувствительность к шуму", "Боль в шее", "Головокружение",
+    "Насморк", "Бессонница", "Подавленное настроение",
+    "Тревожность", "Чувствительность к запахам",
+    "Жар / ощущение жара", "Звон в ушах", "Усталость",
+    "Расплывчатое зрение", "Перепады настроения",
+]
 
 
 async def async_setup_entry(
@@ -70,36 +80,36 @@ class MigraineLastRecordSensor(SensorEntity):
         ))
 
     def _on_saved(self, event: dict) -> None:
+        """Publish the exact data passed after a successful database operation."""
         kind = event["event_type"]
-        payload = event["payload"]
+        payload = event.get("payload", {})
         labels = {
-            "pain": "Боль", "premonition": "Предчувствие",
-            "medication": "Лекарство", "symptom": "Симптомы",
-            "food": "Еда", "note": "Заметка",
-            "activity": "Активность", "response": "Результат",
+            "start": "Началась мигрень",
+            "end": "Закончилась мигрень",
+            "state_update": "Изменилось состояние",
+            "pain": "Изменилось состояние",
+            "medication": "Приём лекарства",
+            "premonition": "Предчувствие",
         }
-        self._attr_native_value = labels.get(kind, kind)
+        label = labels.get(kind, kind)
+        self._attr_native_value = label
         attrs = {
-            "тип_записи": labels.get(kind, kind),
-            "время_сохранения": event["saved_at"],
-            "приступ": event.get("episode_id"),
-            "id_записи": event["event_id"],
+            "дата_и_время_записи": event["saved_at"],
+            "событие": label,
         }
-        if kind == "pain":
-            attrs.update({
-                "интенсивность": payload.get("intensity"),
-                "зоны_боли": payload.get("zones", []),
-                "симптомы": payload.get("symptoms", []),
-            })
+        if kind in ("start", "state_update", "pain"):
+            attrs["уровень"] = payload.get("intensity")
+            attrs["зоны"] = payload.get("zones", [])
+            symptoms = payload.get("symptoms", [])
+            # The card sends symptom names; normalize them to 1–20 for display.
+            if symptoms and isinstance(symptoms[0], str):
+                attrs["симптомы"] = [
+                    SYMPTOM_NAMES.index(s) + 1 for s in symptoms
+                    if s in SYMPTOM_NAMES
+                ]
+            else:
+                attrs["симптомы"] = symptoms
         elif kind == "medication":
-            attrs.update({
-                "лекарство": payload.get("name"),
-                "дозировка": payload.get("dose"),
-                "единица": payload.get("unit"),
-            })
-        elif kind == "premonition":
-            attrs["симптомы"] = payload.get("symptoms", [])
-        else:
-            attrs["данные"] = payload
+            attrs["лекарство"] = payload.get("name")
         self._attr_extra_state_attributes = attrs
         self.async_write_ha_state()
