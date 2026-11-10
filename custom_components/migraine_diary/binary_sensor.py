@@ -1,6 +1,8 @@
 """Binary migraine state, derived from the SQLite episode record."""
 from __future__ import annotations
 
+from datetime import timedelta
+
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -11,6 +13,7 @@ DOMAIN = "migraine_diary"
 from .storage import DiaryStore
 
 SIGNAL_EPISODE_CHANGED = "migraine_diary_episode_changed"
+SCAN_INTERVAL = timedelta(seconds=30)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
@@ -24,7 +27,7 @@ class MigraineBinarySensor(BinarySensorEntity):
     _attr_name = "Migren"
     _attr_has_entity_name = False
     _attr_icon = "mdi:head-flash"
-    _attr_should_poll = False
+    _attr_should_poll = True
 
     def __init__(self, store: DiaryStore, entry_id: str) -> None:
         self._store = store
