@@ -55,7 +55,7 @@ class DiaryStoreTests(unittest.IsolatedAsyncioTestCase):
             await self.store.record_event("other", "medication", {"name": "Example"}, episode_id=episode)
 
     async def test_pain_validation(self):
-        for payload in ({"intensity": 11, "zones": [1]}, {"intensity": 5, "zones": [20]}, {"intensity": True, "zones": [1]}):
+        for payload in ({"intensity": 0, "zones": [1]}, {"intensity": 10, "zones": [1]}, {"intensity": 5, "zones": [20]}, {"intensity": True, "zones": [1]}):
             with self.assertRaises(ValueError):
                 await self.store.record_event("patient", "pain", payload)
 
