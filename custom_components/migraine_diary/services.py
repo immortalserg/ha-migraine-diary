@@ -25,7 +25,7 @@ SCHEMAS = {
     "start_episode": vol.Schema({PROFILE: cv.string, vol.Optional("started_at"): cv.string,
                                   vol.Optional("headache_type", default="unspecified"): cv.string,
                                   vol.Optional("notes"): cv.string}),
-    "end_episode": vol.Schema({PROFILE: cv.string, vol.Optional("ended_at"): cv.string}),
+    "end_episode": vol.Schema({PROFILE: cv.string, EPISODE: cv.string, vol.Optional("ended_at"): cv.string}),
     "record_premonition": vol.Schema({PROFILE: cv.string, TIMESTAMP: cv.string,
                                       vol.Optional("symptoms", default=list): [cv.string]}),
     "record_medication": vol.Schema({PROFILE: cv.string, TIMESTAMP: cv.string,
@@ -56,9 +56,12 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
                 return {"episode_id": episode_id}
             if name == "end_episode":
+                requested_id = data.get("episode_id")
                 active = await store.get_active_episode(profile_id)
                 if active is None:
-                    raise ValueError("No active episode for profile")
+                    raise ValueError(f"No active episode for profile {profile_id!r}")
+                if requested_id is not None and requested_id != active["id"]:
+                    raise ValueError("Requested episode does not match active episode for profile")
                 await store.end_episode(active["id"], ended_at=data.get("ended_at"))
                 async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
                 return {"episode_id": active["id"]}
