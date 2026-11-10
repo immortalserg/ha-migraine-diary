@@ -1,7 +1,7 @@
 """Sensors exposing the current migraine episode to Home Assistant."""
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -93,7 +93,6 @@ class MigraineLastRecordSensor(SensorEntity):
             "premonition": "Предчувствие",
         }
         label = labels.get(kind, kind)
-        self._attr_native_value = label
         attrs = {
             "дата_и_время_записи": event["saved_at"],
             "событие": label,
@@ -112,5 +111,30 @@ class MigraineLastRecordSensor(SensorEntity):
                 attrs["симптомы"] = symptoms
         elif kind == "medication":
             attrs["лекарство"] = payload.get("name")
+        try:
+            recorded_time = datetime.fromisoformat(event["saved_at"].replace("Z", "+00:00"))
+            recorded_time = recorded_time.astimezone(self.hass.config.time_zone)
+            time_label = recorded_time.strftime("%d.%m.%Y %H:%M:%S")
+        except (ValueError, TypeError):
+            time_label = str(event["saved_at"])
+
+        parts = [time_label, label]
+        if kind in ("start", "state_update", "pain"):
+            parts.append(f"уровень: {attrs['уровень']}")
+            parts.append("зоны: " + (", ".join(map(str, attrs["зоны"])) or "нет"))
+            parts.append("симптомы: " + (", ".join(map(str, attrs["симптомы"])) or "нет"))
+        elif kind == "medication":
+            medicine = attrs.get("лекарство") or "не указано"
+            dose = payload.get("dose")
+            unit = payload.get("unit", "")
+            if dose is not None:
+                medicine += f" {dose:g}" if isinstance(dose, (int, float)) else f" {dose}"
+                if unit:
+                    medicine += f" {unit}"
+            parts.append(medicine)
+
+        # HA recorder limits entity state strings to 255 characters.
+        state = " — ".join(parts)
+        self._attr_native_value = state[:255]
         self._attr_extra_state_attributes = attrs
         self.async_write_ha_state()
