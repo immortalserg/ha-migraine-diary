@@ -42,6 +42,22 @@ SCHEMAS = {
 }
 
 
+def _current_state(hass: HomeAssistant) -> dict:
+    """Snapshot integration-owned entities at the moment of recording."""
+    level = hass.states.get("number.migraine_level")
+    try:
+        intensity = int(float(level.state)) if level else 5
+    except (ValueError, TypeError):
+        intensity = 5
+    if not 1 <= intensity <= 9:
+        intensity = 5
+    return {
+        "intensity": intensity,
+        "zones": [i for i in range(1, 20) if (s := hass.states.get(f"switch.migraine_zone_{i}")) is not None and s.state == "on"],
+        "symptoms": [i for i in range(1, 21) if (s := hass.states.get(f"switch.migrene_sypptome{i}")) is not None and s.state == "on"],
+    }
+
+
 def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
     """Register services once, for the active single-entry integration."""
 
@@ -56,6 +72,14 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                     headache_type=data.get("headache_type", "unspecified"),
                     notes=data.get("notes"),
                 )
+                if created:
+                    snapshot = _current_state(hass)
+                    event_id = await store.record_event(profile_id, "pain", snapshot, episode_id=episode_id)
+                    async_dispatcher_send(hass, SIGNAL_RECORD_SAVED, {
+                        "event_id": event_id, "episode_id": episode_id,
+                        "event_type": "start", "payload": snapshot,
+                        "saved_at": datetime.now(timezone.utc).isoformat(),
+                    })
                 async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
                 return {"episode_id": episode_id, "created": created}
             if name == "end_episode":
@@ -66,6 +90,11 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 if requested_id is not None and requested_id != active["id"]:
                     raise ValueError("Requested episode does not match active episode for profile")
                 await store.end_episode(active["id"], ended_at=data.get("ended_at"))
+                async_dispatcher_send(hass, SIGNAL_RECORD_SAVED, {
+                    "event_id": active["id"], "episode_id": active["id"],
+                    "event_type": "end", "payload": {},
+                    "saved_at": datetime.now(timezone.utc).isoformat(),
+                })
                 async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
                 return {"episode_id": active["id"]}
             active = await store.get_active_episode(profile_id)
@@ -92,7 +121,7 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
             async_dispatcher_send(hass, SIGNAL_RECORD_SAVED, {
                 "event_id": event_id,
                 "episode_id": episode_id,
-                "event_type": name.removeprefix("record_"),
+                "event_type": "state_update" if name == "record_pain" else name.removeprefix("record_"),
                 "payload": payload,
                 "saved_at": datetime.now(timezone.utc).isoformat(),
             })
