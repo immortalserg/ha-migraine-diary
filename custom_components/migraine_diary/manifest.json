@@ -1,0 +1,13 @@
+{
+  "domain": "migraine_diary",
+  "name": "Migraine Diary",
+  "version": "0.1.0",
+  "documentation": "https://github.com/immortalserg/ha-migraine-diary",
+  "issue_tracker": "https://github.com/immortalserg/ha-migraine-diary/issues",
+  "codeowners": [
+    "@immortalserg"
+  ],
+  "config_flow": true,
+  "requirements": [],
+  "iot_class": "local_push"
+}
