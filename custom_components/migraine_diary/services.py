@@ -17,6 +17,15 @@ from .storage import DiaryStore
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = "migraine_diary"
 SIGNAL_RECORD_SAVED = "migraine_diary_record_saved"
+
+def _notify_record_saved(hass: HomeAssistant, event: dict) -> None:
+    """Update the registered sensor immediately after successful persistence."""
+    sensor = hass.data.get(DOMAIN, {}).get("last_record_sensor")
+    if sensor is not None:
+        sensor.update_from_saved_event(event)
+    else:
+        _LOGGER.warning("Last-record sensor not registered for saved event %s", event["event_id"])
+
 SERVICE_NAMES = ("start_episode", "end_episode", "record_premonition", "record_medication", "record_pain")
 
 PROFILE = vol.Required("profile_id")
@@ -75,7 +84,7 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 if created:
                     snapshot = _current_state(hass)
                     event_id = await store.record_event(profile_id, "pain", snapshot, episode_id=episode_id)
-                    async_dispatcher_send(hass, SIGNAL_RECORD_SAVED, {
+                    _notify_record_saved(hass, {
                         "event_id": event_id, "episode_id": episode_id,
                         "event_type": "start", "payload": snapshot,
                         "saved_at": datetime.now(timezone.utc).isoformat(),
@@ -90,7 +99,7 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 if requested_id is not None and requested_id != active["id"]:
                     raise ValueError("Requested episode does not match active episode for profile")
                 await store.end_episode(active["id"], ended_at=data.get("ended_at"))
-                async_dispatcher_send(hass, SIGNAL_RECORD_SAVED, {
+                _notify_record_saved(hass, {
                     "event_id": active["id"], "episode_id": active["id"],
                     "event_type": "end", "payload": {},
                     "saved_at": datetime.now(timezone.utc).isoformat(),
@@ -118,7 +127,7 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 profile_id, name.removeprefix("record_"), payload,
                 episode_id=episode_id, occurred_at=occurred_at,
             )
-            async_dispatcher_send(hass, SIGNAL_RECORD_SAVED, {
+            _notify_record_saved(hass, {
                 "event_id": event_id,
                 "episode_id": episode_id,
                 "event_type": "state_update" if name == "record_pain" else name.removeprefix("record_"),
