@@ -35,7 +35,8 @@ SCHEMAS = {
     "record_pain": vol.Schema({PROFILE: cv.string, TIMESTAMP: cv.string,
                                EPISODE: cv.string,
                                vol.Required("intensity"): vol.All(vol.Coerce(int), vol.Range(min=1, max=9)),
-                               vol.Required("zones"): [vol.All(vol.Coerce(int), vol.Range(min=1, max=19))]}),
+                               vol.Required("zones"): [vol.All(vol.Coerce(int), vol.Range(min=1, max=19))],
+                               vol.Optional("symptoms", default=list): [cv.string]}),
 }
 
 
@@ -79,13 +80,15 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
             elif name == "record_pain":
                 if episode_id is None:
                     raise ValueError("Pain recording requires an active episode")
-                payload = {"intensity": data["intensity"], "zones": data["zones"]}
+                payload = {"intensity": data["intensity"], "zones": data["zones"], "symptoms": data.get("symptoms", [])}
             else:
                 raise ValueError("Unsupported service")
             event_id = await store.record_event(
                 profile_id, name.removeprefix("record_"), payload,
                 episode_id=episode_id, occurred_at=occurred_at,
             )
+            if name == "record_pain":
+                async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
             return {"event_id": event_id}
         except (ValueError, sqlite3.IntegrityError) as err:
             raise HomeAssistantError(str(err)) from err
