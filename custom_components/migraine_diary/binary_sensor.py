@@ -52,7 +52,11 @@ class MigraineBinarySensor(BinarySensorEntity):
     async def async_update(self) -> None:
         active = await self._store.get_active_episode("patient")
         self._attr_is_on = active is not None
-        self._attr_extra_state_attributes = (
-            {"episode_id": active["id"], "started_at": active["started_at"]}
-            if active else {}
-        )
+        if active:
+            pain = await self._store.get_latest_pain("patient")
+            self._attr_extra_state_attributes = {
+                "episode_id": active["id"], "started_at": active["started_at"],
+                "latest_pain": pain,
+            }
+        else:
+            self._attr_extra_state_attributes = {}
