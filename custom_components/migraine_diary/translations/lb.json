@@ -1,0 +1,10 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Migränendagbuch",
+        "description": "Richt däin Dagbuch fir Kappwéi an"
+      }
+    }
+  }
+}
