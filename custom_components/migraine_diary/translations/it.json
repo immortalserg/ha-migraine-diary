@@ -6,5 +6,90 @@
         "description": "Configura il diario del mal di testa"
       }
     }
+  },
+  "entity": {
+    "switch": {
+      "zone": {
+        "name": "Zona dolorosa {number}"
+      },
+      "symptom_1": {
+        "name": "Dolore lancinante intenso"
+      },
+      "symptom_2": {
+        "name": "Dolore pulsante"
+      },
+      "symptom_3": {
+        "name": "Dolore pulsante intermittente"
+      },
+      "symptom_4": {
+        "name": "Peggiora con il movimento"
+      },
+      "symptom_5": {
+        "name": "Nausea"
+      },
+      "symptom_6": {
+        "name": "Vomito"
+      },
+      "symptom_7": {
+        "name": "Sensibilità alla luce"
+      },
+      "symptom_8": {
+        "name": "Sensibilità ai suoni"
+      },
+      "symptom_9": {
+        "name": "Dolore al collo"
+      },
+      "symptom_10": {
+        "name": "Vertigini"
+      },
+      "symptom_11": {
+        "name": "Naso che cola"
+      },
+      "symptom_12": {
+        "name": "Insonnia"
+      },
+      "symptom_13": {
+        "name": "Umore depresso"
+      },
+      "symptom_14": {
+        "name": "Ansia"
+      },
+      "symptom_15": {
+        "name": "Sensibilità agli odori"
+      },
+      "symptom_16": {
+        "name": "Sensazione di calore"
+      },
+      "symptom_17": {
+        "name": "Acufeni"
+      },
+      "symptom_18": {
+        "name": "Stanchezza"
+      },
+      "symptom_19": {
+        "name": "Vista offuscata"
+      },
+      "symptom_20": {
+        "name": "Sbalzi d’umore"
+      }
+    },
+    "number": {
+      "migraine_level": {
+        "name": "Intensità del dolore"
+      }
+    },
+    "binary_sensor": {
+      "migraine_active": {
+        "name": "Attacco di emicrania"
+      }
+    },
+    "sensor": {
+      "active_episode": {
+        "name": "Attacco attivo"
+      },
+      "last_record": {
+        "name": "Ultima registrazione"
+      }
+    }
   }
 }
