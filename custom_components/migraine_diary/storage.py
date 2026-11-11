@@ -270,6 +270,44 @@ class DiaryStore:
             await asyncio.to_thread(self._run, op)
         return event_id
 
+    async def update_food(self, profile_id: str, event_id: str, *, name: str,
+                          quantity: str = "", notes: str = "",
+                          occurred_at: str | None = None) -> None:
+        """Update only a food event belonging to the requested profile."""
+        name = name.strip()
+        if not name or len(name) > 200:
+            raise ValueError("Food name must contain 1–200 characters")
+        if len(quantity) > 100 or len(notes) > 500:
+            raise ValueError("Food quantity or notes exceed allowed length")
+        timestamp = _iso(occurred_at) if occurred_at is not None else None
+        async with self._lock:
+            def op(conn):
+                row = conn.execute(
+                    "SELECT occurred_at FROM events WHERE id=? AND profile_id=? AND event_type='food'",
+                    (event_id, profile_id),
+                ).fetchone()
+                if row is None:
+                    raise ValueError("Food record not found for profile")
+                conn.execute(
+                    "UPDATE events SET occurred_at=?, payload_json=? WHERE id=? AND profile_id=? AND event_type='food'",
+                    (timestamp or row["occurred_at"],
+                     json.dumps({"name": name, "quantity": quantity.strip(), "notes": notes.strip()}, ensure_ascii=False),
+                     event_id, profile_id),
+                )
+            await asyncio.to_thread(self._run, op)
+
+    async def delete_food(self, profile_id: str, event_id: str) -> None:
+        """Delete a food event without affecting migraine events or other profiles."""
+        async with self._lock:
+            def op(conn):
+                cursor = conn.execute(
+                    "DELETE FROM events WHERE id=? AND profile_id=? AND event_type='food'",
+                    (event_id, profile_id),
+                )
+                if cursor.rowcount != 1:
+                    raise ValueError("Food record not found for profile")
+            await asyncio.to_thread(self._run, op)
+
     async def get_latest_pain(self, profile_id: str) -> dict | None:
         """Latest saved pain assessment for the currently active episode."""
         def op(conn):
