@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 import sqlite3
+from pathlib import Path
+
+from homeassistant.components import frontend
+from homeassistant.components.http import StaticPathConfig
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -14,6 +18,23 @@ from .storage import DiaryStore
 
 DOMAIN = "migraine_diary"
 PLATFORMS = ["sensor", "binary_sensor", "switch", "number"]
+FRONTEND_URL = "/migraine_diary/frontend"
+FRONTEND_VERSION = "0.1.0"
+
+
+async def _async_register_frontend(hass: HomeAssistant) -> None:
+    """Expose bundled card and load its module without a manual Lovelace resource."""
+    if hass.data.setdefault(DOMAIN, {}).get("frontend_registered"):
+        return
+    asset_dir = Path(__file__).parent / "frontend"
+    await hass.http.async_register_static_paths([
+        StaticPathConfig(FRONTEND_URL, str(asset_dir), cache_headers=False)
+    ])
+    frontend.add_extra_js_url(
+        hass, f"{FRONTEND_URL}/migraine-diary-card.js?v={FRONTEND_VERSION}"
+    )
+    hass.data[DOMAIN]["frontend_registered"] = True
+
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -30,6 +51,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # A default profile already exists after a previous startup.
         pass
 
+    await _async_register_frontend(hass)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = store
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     hass.http.register_view(MigraineHistoryView(store))
@@ -55,6 +77,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         unregister_services(hass)
         data = hass.data.get(DOMAIN, {})
         data.pop(entry.entry_id, None)
-        if not data:
-            hass.data.pop(DOMAIN, None)
+        # Keep the frontend registration marker until restart.
     return unloaded
