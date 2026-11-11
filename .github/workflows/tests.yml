@@ -27,6 +27,8 @@ jobs:
               print(f'OK: {path}')
           PY
       - name: Validate Lovelace card JavaScript syntax
-        run: node --check frontend/migraine-diary-card.js
+        run: |
+          node --check frontend/migraine-diary-card.js
+          node --check custom_components/migraine_diary/frontend/migraine-diary-card.js
       - name: SQLite regression tests
         run: python -m unittest discover -s tests -v
