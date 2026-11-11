@@ -126,6 +126,25 @@ class DiaryStore:
                     raise ValueError("Episode not active, not found, or end before start")
             await asyncio.to_thread(self._run, op)
 
+    async def create_past_episode(self, profile_id: str, started_at: str, ended_at: str) -> str:
+        """Atomically add an already completed episode without changing active state."""
+        start = _iso(started_at)
+        end = _iso(ended_at)
+        if start >= end:
+            raise ValueError("End must be after start")
+        if end > utc_now():
+            raise ValueError("Past episode cannot end in the future")
+        episode_id = str(uuid4())
+        async with self._lock:
+            def op(conn):
+                conn.execute(
+                    "INSERT INTO episodes(id,profile_id,started_at,ended_at,headache_type) "
+                    "VALUES(?,?,?,?,?)",
+                    (episode_id, profile_id, start, end, "unspecified"),
+                )
+            await asyncio.to_thread(self._run, op)
+        return episode_id
+
     async def record_event(
         self, profile_id: str, event_type: str, payload: dict,
         *, episode_id: str | None = None, occurred_at: str | None = None
