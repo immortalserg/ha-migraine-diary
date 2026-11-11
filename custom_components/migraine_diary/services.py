@@ -28,7 +28,7 @@ def _notify_record_saved(hass: HomeAssistant, event: dict) -> None:
     else:
         _LOGGER.warning("Last-record sensor not registered for saved event %s", event["event_id"])
 
-SERVICE_NAMES = ("start_episode", "end_episode", "record_past_episode", "correct_active_start", "record_premonition", "record_medication", "record_pain", "list_history", "export_csv")
+SERVICE_NAMES = ("start_episode", "end_episode", "record_past_episode", "correct_active_start", "record_premonition", "record_medication", "record_food", "record_pain", "list_history", "export_csv")
 
 PROFILE = vol.Required("profile_id")
 TIMESTAMP = vol.Optional("occurred_at")
@@ -49,6 +49,10 @@ SCHEMAS = {
                                      EPISODE: cv.string, vol.Required("name"): cv.string,
                                      vol.Optional("dose"): vol.Coerce(float),
                                      vol.Optional("unit"): cv.string}),
+    "record_food": vol.Schema({PROFILE: cv.string, TIMESTAMP: cv.string,
+                               vol.Required("name"): vol.All(cv.string, vol.Length(min=1, max=200)),
+                               vol.Optional("quantity"): vol.All(cv.string, vol.Length(max=100)),
+                               vol.Optional("notes"): vol.All(cv.string, vol.Length(max=500))}),
     "record_pain": vol.Schema({PROFILE: cv.string, TIMESTAMP: cv.string,
                                EPISODE: cv.string,
                                vol.Required("intensity"): vol.All(vol.Coerce(int), vol.Range(min=1, max=9)),
@@ -148,6 +152,13 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 payload = {"symptoms": data.get("symptoms", [])}
             elif name == "record_medication":
                 payload = {k: data[k] for k in ("name", "dose", "unit") if k in data}
+            elif name == "record_food":
+                payload = {"name": data["name"].strip()}
+                if not payload["name"]:
+                    raise ValueError("Food name cannot be blank")
+                payload.update({k: data[k].strip() for k in ("quantity", "notes") if k in data})
+                # Food intake is independent of the migraine episode timeline.
+                episode_id = None
             elif name == "record_pain":
                 if episode_id is None:
                     raise ValueError("Pain recording requires an active episode")
