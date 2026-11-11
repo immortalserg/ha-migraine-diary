@@ -102,5 +102,157 @@
         }
       }
     }
+  },
+  "services": {
+    "start_episode": {
+      "name": "Ufall ufänken",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "started_at": {
+          "name": "Ufank"
+        },
+        "headache_type": {
+          "name": "Kappwéi-Typ"
+        },
+        "notes": {
+          "name": "Notizen"
+        }
+      }
+    },
+    "end_episode": {
+      "name": "Ufall ofschléissen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "episode_id": {
+          "name": "Ufall-ID"
+        },
+        "ended_at": {
+          "name": "Enn"
+        }
+      }
+    },
+    "record_past_episode": {
+      "name": "Fréieren Ufall späicheren",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "started_at": {
+          "name": "Ufank"
+        },
+        "ended_at": {
+          "name": "Enn"
+        }
+      }
+    },
+    "correct_active_start": {
+      "name": "Ufank vum Ufall korrigéieren",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "started_at": {
+          "name": "Ufank"
+        }
+      }
+    },
+    "record_premonition": {
+      "name": "Virzeechen ophuelen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "symptoms": {
+          "name": "Symptomer"
+        },
+        "occurred_at": {
+          "name": "Zäit vum Evenement"
+        }
+      }
+    },
+    "record_medication": {
+      "name": "Medikament ophuelen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "name": {
+          "name": "Medikament"
+        },
+        "dose": {
+          "name": "Dosis"
+        },
+        "unit": {
+          "name": "Eenheet"
+        },
+        "episode_id": {
+          "name": "Ufall-ID"
+        },
+        "occurred_at": {
+          "name": "Zäit vum Evenement"
+        }
+      }
+    },
+    "record_pain": {
+      "name": "Péng ophuelen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "intensity": {
+          "name": "Intensitéit"
+        },
+        "zones": {
+          "name": "Schmäerzzonen"
+        },
+        "symptoms": {
+          "name": "Symptomer"
+        },
+        "episode_id": {
+          "name": "Ufall-ID"
+        },
+        "occurred_at": {
+          "name": "Zäit vum Evenement"
+        }
+      }
+    },
+    "list_history": {
+      "name": "Verlaf weisen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "limit": {
+          "name": "Limit"
+        },
+        "start": {
+          "name": "Vun"
+        },
+        "end": {
+          "name": "Bis"
+        }
+      }
+    },
+    "export_csv": {
+      "name": "CSV exportéieren",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "limit": {
+          "name": "Limit"
+        },
+        "start": {
+          "name": "Vun"
+        },
+        "end": {
+          "name": "Bis"
+        }
+      }
+    }
   }
 }
