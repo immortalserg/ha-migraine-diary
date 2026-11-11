@@ -368,7 +368,7 @@ class MigraineDiaryCard extends HTMLElement {
 
   _language() {
     const lang=(this._config.language || this._hass?.locale?.language || this._hass?.language || "en").toLowerCase().split("-")[0];
-    return WORDS[lang] ? lang : "en";
+    return WORDS[lang==="lb"?"lu":lang] ? (lang==="lb"?"lu":lang) : "en";
   }
   _t(key){return EXTRA_WORDS[this._language()]?.[key] || WORDS[this._language()][key] || key;}
   _entityActive() {
@@ -466,7 +466,7 @@ class MigraineDiaryCard extends HTMLElement {
     }
     modeLabel.append(mode);dialog.append(modeLabel);
     const fields={};
-    for(const [key,name] of [["start","Начало"],["end","Конец"]]){
+    for(const [key,name] of [["start",this._t("start")],["end",this._t("end")]]){
       const label=document.createElement("label");label.style.cssText="display:block;margin:12px 0";label.textContent=name;
       const input=document.createElement("input");input.type="datetime-local";input.required=true;input.style.cssText="display:block;margin-top:5px;padding:8px;max-width:100%";
       label.append(input);dialog.append(label);fields[key]={label,input};
