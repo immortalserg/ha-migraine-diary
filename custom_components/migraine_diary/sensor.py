@@ -29,7 +29,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     store: DiaryStore = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([MigraineEpisodeSensor(store, entry.entry_id), MigraineLastRecordSensor(store, entry.entry_id)], True)
+    async_add_entities([MigraineEpisodeSensor(store, entry.entry_id), MigraineLastRecordSensor(store, entry.entry_id, entry)], True)
 
 
 class MigraineEpisodeSensor(SensorEntity):
@@ -168,8 +168,9 @@ class MigraineLastRecordSensor(SensorEntity):
             configuration_url="https://github.com/immortalserg/ha-migraine-diary",
         )
 
-    def __init__(self, store: DiaryStore, entry_id: str) -> None:
+    def __init__(self, store: DiaryStore, entry_id: str, entry: ConfigEntry) -> None:
         self._entry_id = entry_id
+        self._entry = entry
         self._attr_unique_id = f"{entry_id}_last_record"
         self.entity_id = "sensor.migraine_diary_last_record"
         self._attr_native_value = "No recent records"
@@ -187,7 +188,9 @@ class MigraineLastRecordSensor(SensorEntity):
             self.hass.data[DOMAIN].pop("last_record_sensor", None)
 
     def _language(self) -> str:
-        language = (self.hass.config.language or "en").split("-")[0].lower()
+        configured = self._entry.options.get("language", "auto")
+        language = (self.hass.config.language if configured == "auto" else configured) or "en"
+        language = language.split("-")[0].lower()
         return "lu" if language == "lb" else language if language in LAST_RECORD_TEXT else "en"
 
     def _publish_event(self) -> None:
