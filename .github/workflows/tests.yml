@@ -16,5 +16,17 @@ jobs:
           python-version: '3.13'
       - name: Compile Python modules
         run: python -m compileall -q custom_components/migraine_diary tests
+      - name: Validate integration JSON files
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          files = [Path('hacs.json'), *Path('custom_components/migraine_diary').rglob('*.json')]
+          for path in files:
+              json.loads(path.read_text(encoding='utf-8'))
+              print(f'OK: {path}')
+          PY
+      - name: Validate Lovelace card JavaScript syntax
+        run: node --check frontend/migraine-diary-card.js
       - name: SQLite regression tests
         run: python -m unittest discover -s tests -v
