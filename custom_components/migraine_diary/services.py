@@ -35,7 +35,7 @@ TIMESTAMP = vol.Optional("occurred_at")
 EPISODE = vol.Optional("episode_id")
 
 SCHEMAS = {
-    "export_csv": vol.Schema({PROFILE: cv.string, vol.Optional("limit", default=1000): vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)), vol.Optional("start"): cv.string, vol.Optional("end"): cv.string}),
+    "export_csv": vol.Schema({PROFILE: cv.string, vol.Optional("start"): cv.string, vol.Optional("end"): cv.string}),
     "list_history": vol.Schema({PROFILE: cv.string, vol.Optional("limit", default=200): vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)), vol.Optional("start"): cv.string, vol.Optional("end"): cv.string}),
     "correct_active_start": vol.Schema({PROFILE: cv.string, vol.Required("started_at"): cv.string}),
     "record_past_episode": vol.Schema({PROFILE: cv.string, vol.Required("started_at"): cv.string, vol.Required("ended_at"): cv.string, vol.Optional("intensity"): vol.All(vol.Coerce(int), vol.Range(min=1, max=9)), vol.Optional("zones"): [vol.All(vol.Coerce(int), vol.Range(min=1, max=19))], vol.Optional("symptoms"): [cv.string]}),
@@ -92,29 +92,27 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
         profile_id = data.pop("profile_id")
         try:
             if name in ("list_history", "export_csv"):
-                records = await store.list_history(
-                    profile_id, limit=data.get("limit", 200),
-                    start=data.get("start"), end=data.get("end"),
-                )
                 if name == "list_history":
+                    records = await store.list_history(
+                        profile_id, limit=data.get("limit", 200),
+                        start=data.get("start"), end=data.get("end"),
+                    )
                     return {"records": records}
                 buffer = io.StringIO()
                 columns = ["date", "event", "level", "zones", "symptoms", "medication", "food", "quantity", "notes", "dose", "unit", "episode_id", "id"]
                 writer = csv.DictWriter(buffer, fieldnames=columns, extrasaction="ignore", delimiter=";")
                 writer.writeheader()
-                writer.writerows(records)
-                return {"filename": "migraine-diary.csv", "csv": buffer.getvalue(), "count": len(records)}
-            if name in ("update_food", "delete_food"):
-                event_id = data["event_id"]
-                if name == "update_food":
-                    await store.update_food(
-                        profile_id, event_id, name=data["name"],
-                        quantity=data.get("quantity", ""), notes=data.get("notes", ""),
-                        occurred_at=data.get("occurred_at"),
+                offset = 0
+                while True:
+                    batch = await store.list_history(
+                        profile_id, limit=1000, offset=offset,
+                        start=data.get("start"), end=data.get("end"),
                     )
-                else:
-                    await store.delete_food(profile_id, event_id)
-                return {"event_id": event_id}
+                    writer.writerows(batch)
+                    offset += len(batch)
+                    if len(batch) < 1000:
+                        break
+                return {"filename": "migraine-diary.csv", "csv": buffer.getvalue(), "count": offset}
             if name == "correct_active_start":
                 episode_id = await store.correct_active_start(profile_id, data["started_at"])
                 async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
