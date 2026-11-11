@@ -5,6 +5,8 @@ import sqlite3
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
+from .binary_sensor import SIGNAL_EPISODE_CHANGED
 
 from .history_api import MigraineHistoryView
 from .services import register_services, unregister_services
@@ -42,12 +44,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> Non
     sensor = data.get("last_record_sensor")
     if sensor is not None and getattr(sensor, "_entry_id", None) == entry.entry_id:
         sensor._publish_event()
-    state = hass.states.get("binary_sensor.migren")
-    if state is not None:
-        # Refresh the public language attribute used by the Lovelace card.
-        attributes = dict(state.attributes)
-        attributes["language"] = entry.options.get("language", "auto")
-        hass.states.async_set(state.entity_id, state.state, attributes)
+    async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
