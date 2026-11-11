@@ -16,7 +16,7 @@ const DEFAULT_LABELS={title:true,zones:true,intensity:true,symptoms:true,medicat
 const SYMPTOMS=["Сильная ударная боль","Пульсирующая боль","Пульсирующая периодическая боль","Усиливается при движении","Тошнота","Рвота","Светочувствительность","Чувствительность к шуму","Боль в шее","Головокружение","Насморк","Бессонница","Подавленное настроение","Тревожность","Чувствительность к запахам","Жар / ощущение жара","Звон в ушах","Усталость","Расплывчатое зрение","Перепады настроения"];
 class MigraineDiaryCard extends HTMLElement {
   setConfig(config) {
-    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, ...config};
+    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", ...config};
     for(const key of ["button_font_size","button_icon_size","action_font_size","action_icon_size"]){
       const value=Number(this._config[key]);
       if(!Number.isFinite(value)||value<6||value>64)throw new Error(key+" must be 6–64 pixels");
@@ -25,6 +25,9 @@ class MigraineDiaryCard extends HTMLElement {
     if (!Array.isArray(this._config.medications)) throw new Error("medications must be an array");
     if(!Array.isArray(this._config.section_order) || this._config.section_order.length!==SECTION_IDS.length || new Set(this._config.section_order).size!==SECTION_IDS.length || this._config.section_order.some(id=>!SECTION_IDS.includes(id)))throw Error("section_order must contain actions, zones, intensity, symptoms, medications exactly once");
     if(typeof this._config.show_labels==="object" && (this._config.show_labels===null || Array.isArray(this._config.show_labels)))throw Error("show_labels must be a boolean or an object");
+    for(const key of ["action_columns","symptom_columns","medication_columns"]){const n=Number(this._config[key]);if(!Number.isInteger(n)||n<1||n>12)throw Error(key+" must be an integer from 1 to 12");this._config[key]=n;}
+    const gap=Number(this._config.section_gap);if(!Number.isFinite(gap)||gap<0||gap>100)throw Error("section_gap must be 0–100");this._config.section_gap=gap;
+    for(const key of ["action_display","symptom_display","medication_display"]){if(!["both","icon","label"].includes(this._config[key]))throw Error(key+" must be both, icon or label");}
     this._zones = new Set(); this._symptoms = new Set(); this._intensity = 5;
     this._loadedAssessmentKey = null;
     this._draftRestoredKey = null;
@@ -136,6 +139,13 @@ class MigraineDiaryCard extends HTMLElement {
     btn.disabled=disabled || this._busy; if(active)btn.classList.add("selected");
     btn.addEventListener("click",action);return btn;
   }
+  _tile(label,iconName,display,action,disabled=false,className=""){
+    const btn=document.createElement("button");btn.type="button";btn.className="tile-btn "+className;
+    btn.disabled=disabled||this._busy;btn.setAttribute("aria-label",label);btn.title=label;
+    if(display!=="label"){const icon=document.createElement("ha-icon");icon.setAttribute("icon",iconName);btn.append(icon);}
+    if(display!=="icon"){const span=document.createElement("span");span.textContent=label;btn.append(span);}
+    btn.addEventListener("click",action);return btn;
+  }
   async _call(service,data) {
     if(this._busy || !this._hass) return;
     this._busy=true;this._message="";this._render();
@@ -177,11 +187,17 @@ class MigraineDiaryCard extends HTMLElement {
     if(!this.shadowRoot || !this._config)return;
     const root=this.shadowRoot;root.replaceChildren();
     const style=document.createElement("style");style.textContent=`
-      :host{display:block;color:var(--primary-text-color);--diary-button-font:${this._config.button_font_size}px;--diary-button-icon:${this._config.button_icon_size}px;--diary-action-font:${this._config.action_font_size}px;--diary-action-icon:${this._config.action_icon_size}px}
+      :host{display:block;color:var(--primary-text-color);--diary-section-gap:${this._config.section_gap}px;--diary-action-columns:${this._config.action_columns};--diary-symptom-columns:${this._config.symptom_columns};--diary-medication-columns:${this._config.medication_columns};--diary-button-font:${this._config.button_font_size}px;--diary-button-icon:${this._config.button_icon_size}px;--diary-action-font:${this._config.action_font_size}px;--diary-action-icon:${this._config.action_icon_size}px}
       ha-card{display:block;padding:16px}
       h2{font-size:1.2rem;margin:0 0 12px}
       h3{font-size:1rem;margin:14px 0 8px}
       .row{display:flex;gap:6px;flex-wrap:wrap}
+      .section{margin:0 0 var(--diary-section-gap);min-width:0}
+      .section:last-of-type{margin-bottom:0}
+      .action-grid,.symptom-grid,.medication-grid{display:grid;gap:6px;min-width:0}
+      .action-grid{grid-template-columns:repeat(var(--diary-action-columns),minmax(0,1fr))}
+      .symptom-grid{grid-template-columns:repeat(var(--diary-symptom-columns),minmax(0,1fr))}
+      .medication-grid{grid-template-columns:repeat(var(--diary-medication-columns),minmax(0,1fr))}
       button{font-size:var(--diary-action-font);background:var(--secondary-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:8px;padding:9px;cursor:pointer}
       button.selected{background:var(--primary-color);color:var(--text-primary-color,#fff)}
       button:disabled{opacity:.4;cursor:not-allowed}
@@ -191,30 +207,32 @@ class MigraineDiaryCard extends HTMLElement {
       .map .selected-zone{fill:rgba(220,65,65,.55)!important;stroke:#d33!important;stroke-width:1.4!important}
       .message{color:var(--error-color);margin-top:8px}
       .status{opacity:.8;margin:8px 0}
-      .medication-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+
       .medication-btn{background:var(--secondary-background-color);color:var(--primary-text-color)}
       .medication-btn ha-icon{--mdc-icon-size:var(--diary-button-icon);width:var(--diary-button-icon);height:var(--diary-button-icon)}
-      .symptom-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-      .symptom-btn,.medication-btn{height:60px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:6px 3px;border-radius:8px}
-      .symptom-btn{height:60px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:6px 3px;border-radius:8px;background:rgb(0,255,0);color:#111;border:1px solid rgba(0,0,0,.16)}
+
+      .tile-btn{height:60px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 3px;border-radius:8px}
+      .action-btn{background:var(--secondary-background-color)}
+      .symptom-btn{background:rgb(0,255,0);color:#111;border:1px solid rgba(0,0,0,.16)}
       .symptom-btn.selected{background:rgb(255,0,0);color:#fff}
-      .symptom-btn ha-icon{--mdc-icon-size:var(--diary-button-icon);width:var(--diary-button-icon);height:var(--diary-button-icon);flex:none}
-      .symptom-btn span,.medication-btn span{font-size:var(--diary-button-font);line-height:1.12;white-space:normal;text-align:center;overflow-wrap:anywhere}
+      .symptom-btn ha-icon,.action-btn ha-icon{--mdc-icon-size:var(--diary-button-icon);width:var(--diary-button-icon);height:var(--diary-button-icon);flex:none}
+      .tile-btn span{font-size:var(--diary-button-font);line-height:1.12;white-space:normal;text-align:center;overflow-wrap:anywhere}
+      .action-btn span{font-size:var(--diary-action-font)}
       `;
     root.append(style);
     const card=document.createElement("ha-card");root.append(card);
     const h=document.createElement("h2");h.textContent=this._t("title");if(this._showLabel("title"))card.append(h);
     const active=this._active();
     const status=document.createElement("div");status.className="status";status.textContent=this._t(active?"active":"noEpisode");card.append(status);
-    const actions=document.createElement("div");actions.className="row";
-    actions.append(this._button(this._t("start"),()=>this._call("start_episode",{}),active));
-    actions.append(this._button(this._t("end"),()=>this._call("end_episode",{episode_id:this._hass?.states?.[this._config.active_entity || "binary_sensor.migren"]?.attributes?.episode_id}),!active));
-    actions.append(this._button(this._t("premonition"),()=>this._call("record_premonition",{symptoms:[...this._symptoms]})));
-    actions.append(this._button(this._t("record"),()=>this._call("record_pain",{
+    const actions=document.createElement("div");actions.className="action-grid";
+    actions.append(this._tile(this._t("start"),"mdi:play-circle-outline",this._config.action_display,()=>this._call("start_episode",{}),active,"action-btn"));
+    actions.append(this._tile(this._t("end"),"mdi:stop-circle-outline",this._config.action_display,()=>this._call("end_episode",{episode_id:this._hass?.states?.[this._config.active_entity || "binary_sensor.migren"]?.attributes?.episode_id}),!active,"action-btn"));
+    actions.append(this._tile(this._t("premonition"),"mdi:weather-lightning",this._config.action_display,()=>this._call("record_premonition",{symptoms:[...this._symptoms]}),false,"action-btn"));
+    actions.append(this._tile(this._t("record"),"mdi:content-save-outline",this._config.action_display,()=>this._call("record_pain",{
       intensity:this._intensity,
       zones:[...this._zones].sort((a,b)=>a-b),
       symptoms:[...this._symptoms]
-    }),!active));
+    }),!active,"action-btn"));
     const zonesHeading=document.createElement("h3");zonesHeading.textContent=this._t("zones");if(this._showLabel("zones"))card.append(zonesHeading);
     if(this._svgLoaded){
       const holder=document.createElement("div");holder.className="map";
@@ -258,19 +276,15 @@ class MigraineDiaryCard extends HTMLElement {
     const symptomHeading=document.createElement("h3");symptomHeading.textContent=this._t("symptoms");if(this._showLabel("symptoms"))card.append(symptomHeading);
     const symptoms=document.createElement("div");symptoms.className="symptom-grid";card.append(symptoms);
     for(let i=0;i<SYMPTOMS.length;i++){
-      const btn=document.createElement("button");btn.type="button";btn.className="symptom-btn";
       const enabled=this._symptoms.has(SYMPTOMS[i]);
-      if(enabled)btn.classList.add("selected");
-      btn.setAttribute("aria-pressed",String(enabled));btn.disabled=this._busy;
-      const icon=document.createElement("ha-icon");icon.setAttribute("icon","mdi:head-flash");
-      const label=document.createElement("span");label.textContent=SYMPTOMS[i];
-      btn.append(icon,label);
-      btn.addEventListener("click",async()=>{
+      const btn=this._tile(SYMPTOMS[i],"mdi:head-flash",this._config.symptom_display,async()=>{
         btn.disabled=true;
         try{await this._toggleSymptom(i+1);}
         catch(error){this._message=this._t("error")+": "+(error?.message || String(error));this._render();}
         finally{btn.disabled=false;}
-      });
+      },false,"symptom-btn");
+      if(enabled)btn.classList.add("selected");
+      btn.setAttribute("aria-pressed",String(enabled));
       symptoms.append(btn);
     }
     const medications=document.createElement("h3");medications.textContent=this._t("medications");if(this._showLabel("medications"))card.append(medications);
@@ -281,32 +295,30 @@ class MigraineDiaryCard extends HTMLElement {
       const payload={name};
       if(dose.dose!==undefined)payload.dose=dose.dose;
       if(dose.unit!==undefined)payload.unit=dose.unit;
-      const btn=document.createElement("button");btn.type="button";btn.className="medication-btn";btn.disabled=this._busy;
-      const icon=document.createElement("ha-icon");icon.setAttribute("icon","mdi:pill");
-      const label=document.createElement("span");label.textContent=name;
-      btn.append(icon,label);
-      btn.addEventListener("click",()=>this._call("record_medication",payload));
+      const btn=this._tile(name,"mdi:pill",this._config.medication_display,()=>this._call("record_medication",payload),false,"medication-btn");
       pills.append(btn);
     }
-    // Reorder complete sections while retaining their existing controls and listeners.
-    const sections={
-      actions:[actions],
-      zones:[zonesHeading,...Array.from(card.children).filter(el=>el.classList?.contains("map") || (el.classList?.contains("row") && el!==actions && el!==levels))],
-      intensity:[intensity,levels],
-      symptoms:[symptomHeading,symptoms],
+    // Assemble each logical section in its own wrapper, preserving spacing
+    // even when all headings are hidden.
+    const mapNode=Array.from(card.children).find(el=>el.classList?.contains("map"));
+    const fallbackNode=!mapNode?Array.from(card.children).find(el=>el.classList?.contains("row")&&el!==levels):null;
+    const sectionContents={
+      actions:[actions],zones:[zonesHeading,mapNode||fallbackNode],
+      intensity:[intensity,levels],symptoms:[symptomHeading,symptoms],
       medications:[medications,pills]
     };
-    // A fallback zone selector is a .row; identify it before moving nodes.
-    const zoneNodes=sections.zones.slice(1);
-    for(const node of zoneNodes)node.remove();
     for(const key of this._config.section_order){
-      for(const node of sections[key]){
-        if(node===zonesHeading && !this._showLabel("zones"))continue;
-        if(node===intensity && !this._showLabel("intensity"))continue;
-        if(node===symptomHeading && !this._showLabel("symptoms"))continue;
-        if(node===medications && !this._showLabel("medications"))continue;
-        card.append(node);
+      const section=document.createElement("section");section.className="section";
+      for(const node of sectionContents[key]){
+        if(!node)continue;
+        if(node===zonesHeading&&!this._showLabel("zones"))continue;
+        if(node===intensity&&!this._showLabel("intensity"))continue;
+        if(node===symptomHeading&&!this._showLabel("symptoms"))continue;
+        if(node===medications&&!this._showLabel("medications"))continue;
+        if(node===levels&&this._svgLoaded)continue;
+        section.append(node);
       }
+      card.append(section);
     }
     const exportButton=this._button("Экспорт CSV",()=>this._exportCsv());
     exportButton.style.marginTop="14px";card.append(exportButton);
