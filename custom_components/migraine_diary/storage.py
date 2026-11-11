@@ -96,6 +96,8 @@ class DiaryStore:
         """
         proposed_id = str(uuid4())
         started_at = _iso(started_at)
+        if started_at > utc_now():
+            raise ValueError("Начало не может быть в будущем")
         async with self._lock:
             def op(conn):
                 existing = conn.execute(
@@ -106,8 +108,8 @@ class DiaryStore:
                     return existing["id"], False
                 conflict = conn.execute(
                     """SELECT id FROM episodes WHERE profile_id=?
-                       AND started_at<=? AND (ended_at IS NULL OR ended_at>?)
-                       LIMIT 1""", (profile_id, started_at, started_at)
+                       AND (ended_at IS NULL OR ended_at>?)
+                       LIMIT 1""", (profile_id, started_at)
                 ).fetchone()
                 if conflict:
                     raise ValueError("Начало пересекается с существующим приступом")
