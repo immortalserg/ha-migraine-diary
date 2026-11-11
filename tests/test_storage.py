@@ -38,6 +38,30 @@ class DiaryStoreTests(unittest.IsolatedAsyncioTestCase):
         with sqlite3.connect(self.db) as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM events").fetchone()[0], 2)
 
+    async def test_past_episode_persists_pain_details(self):
+        episode = await self.store.create_past_episode(
+            "patient", "2026-11-09T10:00:00+01:00", "2026-11-09T12:00:00+01:00",
+            pain={"intensity": 7, "zones": [1, 4], "symptoms": ["Тошнота"]},
+        )
+        with sqlite3.connect(self.db) as conn:
+            row = conn.execute(
+                "SELECT event_type, occurred_at, payload_json FROM events WHERE episode_id=?",
+                (episode,),
+            ).fetchone()
+        self.assertEqual(row[0], "pain")
+        self.assertEqual(row[1], "2026-11-09T09:00:00+00:00")
+        self.assertEqual(json.loads(row[2]), {"intensity": 7, "zones": [1, 4], "symptoms": ["Тошнота"]})
+        history = await self.store.list_history("patient")
+        self.assertTrue(any(row["event"] == "pain" and row["level"] == 7 and row["zones"] == "1, 4" for row in history))
+
+    async def test_invalid_past_pain_does_not_create_episode(self):
+        with self.assertRaises(ValueError):
+            await self.store.create_past_episode(
+                "patient", "2026-11-09T10:00:00+01:00", "2026-11-09T12:00:00+01:00",
+                pain={"intensity": 11, "zones": [1], "symptoms": []},
+            )
+        self.assertEqual(await self.store.list_episodes("patient"), [])
+
     async def test_prevent_duplicate_active_episode(self):
         await self.store.start_episode("patient")
         with self.assertRaises(ValueError):

@@ -38,7 +38,7 @@ SCHEMAS = {
     "export_csv": vol.Schema({PROFILE: cv.string, vol.Optional("limit", default=1000): vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)), vol.Optional("start"): cv.string, vol.Optional("end"): cv.string}),
     "list_history": vol.Schema({PROFILE: cv.string, vol.Optional("limit", default=200): vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)), vol.Optional("start"): cv.string, vol.Optional("end"): cv.string}),
     "correct_active_start": vol.Schema({PROFILE: cv.string, vol.Required("started_at"): cv.string}),
-    "record_past_episode": vol.Schema({PROFILE: cv.string, vol.Required("started_at"): cv.string, vol.Required("ended_at"): cv.string}),
+    "record_past_episode": vol.Schema({PROFILE: cv.string, vol.Required("started_at"): cv.string, vol.Required("ended_at"): cv.string, vol.Optional("intensity"): vol.All(vol.Coerce(int), vol.Range(min=1, max=9)), vol.Optional("zones"): [vol.All(vol.Coerce(int), vol.Range(min=1, max=19))], vol.Optional("symptoms"): [cv.string]}),
     "start_episode": vol.Schema({PROFILE: cv.string, vol.Optional("started_at"): cv.string,
                                   vol.Optional("headache_type", default="unspecified"): cv.string,
                                   vol.Optional("notes"): cv.string}),
@@ -99,7 +99,12 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
                 return {"episode_id": episode_id}
             if name == "record_past_episode":
-                episode_id = await store.create_past_episode(profile_id, data["started_at"], data["ended_at"])
+                pain = None
+                if any(key in data for key in ("intensity", "zones", "symptoms")):
+                    if "intensity" not in data:
+                        raise ValueError("Past episode pain details require intensity")
+                    pain = {"intensity": data["intensity"], "zones": data.get("zones", []), "symptoms": data.get("symptoms", [])}
+                episode_id = await store.create_past_episode(profile_id, data["started_at"], data["ended_at"], pain=pain)
                 return {"episode_id": episode_id}
             if name == "start_episode":
                 episode_id, created = await store.ensure_active_episode(
