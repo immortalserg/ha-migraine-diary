@@ -207,29 +207,62 @@ class DiaryStore:
             raise ValueError("History start must not exceed end")
 
         def op(conn):
-            conditions = ["profile_id=?"]
-            args = [profile_id]
-            if start_at:
-                conditions.append("occurred_at>=?")
-                args.append(start_at)
-            if end_at:
-                conditions.append("occurred_at<=?")
-                args.append(end_at)
-            events = conn.execute(
-                "SELECT id,episode_id,event_type,occurred_at,recorded_at,payload_json "
-                "FROM events WHERE " + " AND ".join(conditions) +
-                " ORDER BY occurred_at DESC, recorded_at DESC LIMIT ?",
-                (*args, limit),
+            # Combine the episode lifecycle with the event stream.
+            # The episode timestamps are authoritative for start/end.
+            where_events = ["profile_id=?"]
+            where_start = ["profile_id=?"]
+            where_end = ["profile_id=?", "ended_at IS NOT NULL"]
+            event_args = [profile_id]
+            start_args = [profile_id]
+            end_args = [profile_id]
+            for boundary, operator in ((start_at, ">="), (end_at, "<=")):
+                if boundary:
+                    where_events.append(f"occurred_at{operator}?")
+                    where_start.append(f"started_at{operator}?")
+                    where_end.append(f"ended_at{operator}?")
+                    event_args.append(boundary)
+                    start_args.append(boundary)
+                    end_args.append(boundary)
+            query = (
+                "SELECT id,episode_id,event_type AS event,occurred_at AS date,"
+                "payload_json,recorded_at FROM events WHERE " + " AND ".join(where_events)
+                + " UNION ALL SELECT 'start:' || id,id,'start',started_at,'{}',started_at"
+                " FROM episodes WHERE " + " AND ".join(where_start)
+                + " UNION ALL SELECT 'end:' || id,id,'end',ended_at,'{}',ended_at"
+                " FROM episodes WHERE " + " AND ".join(where_end)
+                + " ORDER BY date DESC,recorded_at DESC LIMIT ?"
+            )
+            results = conn.execute(
+                query, (*event_args, *start_args, *end_args, limit)
             ).fetchall()
+            symptom_names = [
+                "Сильная ударная боль", "Пульсирующая боль",
+                "Пульсирующая периодическая боль", "Усиливается при движении",
+                "Тошнота", "Рвота", "Светочувствительность",
+                "Чувствительность к шуму", "Боль в шее", "Головокружение",
+                "Насморк", "Бессонница", "Подавленное настроение",
+                "Тревожность", "Чувствительность к запахам",
+                "Жар / ощущение жара", "Звон в ушах", "Усталость",
+                "Расплывчатое зрение", "Перепады настроения",
+            ]
             rows = []
-            for item in events:
+            for item in results:
                 payload = json.loads(item["payload_json"])
+                symptoms = payload.get("symptoms", [])
+                normalized = []
+                for symptom in symptoms:
+                    if isinstance(symptom, int) and 1 <= symptom <= 20:
+                        normalized.append(symptom)
+                    elif isinstance(symptom, str) and symptom in symptom_names:
+                        normalized.append(symptom_names.index(symptom) + 1)
+                    else:
+                        normalized.append(str(symptom))
                 rows.append({
                     "id": item["id"], "episode_id": item["episode_id"],
-                    "date": item["occurred_at"], "event": item["event_type"],
+                    "date": item["date"], "event": item["event"],
                     "level": payload.get("intensity"),
                     "zones": ", ".join(map(str, payload.get("zones", []))),
-                    "symptoms": ", ".join(map(str, payload.get("symptoms", []))),
+                    "symptoms": ", ".join(map(str, normalized)),
                     "medication": payload.get("name", ""),
                     "dose": payload.get("dose"),
                     "unit": payload.get("unit", ""),
