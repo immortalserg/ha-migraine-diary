@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from homeassistant.components.sensor import SensorEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -38,8 +39,19 @@ class MigraineEpisodeSensor(SensorEntity):
     _attr_name = "Active episode"
     _attr_icon = "mdi:head-flash"
 
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={("migraine_diary", self._entry_id)},
+            name="Migraine Diary",
+            manufacturer="Migraine Diary",
+            model="Headache diary",
+            configuration_url="https://github.com/immortalserg/ha-migraine-diary",
+        )
+
     def __init__(self, store: DiaryStore, entry_id: str) -> None:
         self._store = store
+        self._entry_id = entry_id
         self._attr_unique_id = f"{entry_id}_active_episode"
         self._attr_native_value = "none"
         self._attr_extra_state_attributes = {}
@@ -65,7 +77,18 @@ class MigraineLastRecordSensor(SensorEntity):
     _attr_icon = "mdi:database-check"
     _attr_should_poll = False
 
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={("migraine_diary", self._entry_id)},
+            name="Migraine Diary",
+            manufacturer="Migraine Diary",
+            model="Headache diary",
+            configuration_url="https://github.com/immortalserg/ha-migraine-diary",
+        )
+
     def __init__(self, store: DiaryStore, entry_id: str) -> None:
+        self._entry_id = entry_id
         self._attr_unique_id = f"{entry_id}_last_record"
         self.entity_id = "sensor.migraine_diary_last_record"
         self._attr_native_value = "Нет новых записей"
