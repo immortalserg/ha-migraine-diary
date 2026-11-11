@@ -287,6 +287,7 @@ class MigraineDiaryCard extends HTMLElement {
       this._config[key]=value;
     }
     if (!Array.isArray(this._config.medications)) throw new Error("medications must be an array");
+    if(Array.isArray(this._config.section_order) && this._config.section_order.length===SECTION_IDS.length-1 && !this._config.section_order.includes("food"))this._config.section_order=[...this._config.section_order,"food"];
     if(!Array.isArray(this._config.section_order) || this._config.section_order.length!==SECTION_IDS.length || new Set(this._config.section_order).size!==SECTION_IDS.length || this._config.section_order.some(id=>!SECTION_IDS.includes(id)))throw Error("section_order must contain actions, zones, intensity, symptoms, medications exactly once");
     if(typeof this._config.show_labels==="object" && (this._config.show_labels===null || Array.isArray(this._config.show_labels)))throw Error("show_labels must be a boolean or an object");
     for(const key of ["action_columns","symptom_columns","medication_columns"]){const n=Number(this._config[key]);if(!Number.isInteger(n)||n<1||n>12)throw Error(key+" must be an integer from 1 to 12");this._config[key]=n;}
