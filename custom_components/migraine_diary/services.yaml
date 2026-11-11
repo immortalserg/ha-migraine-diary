@@ -1,93 +1,247 @@
 start_episode:
-  name: Start headache episode
-  description: Start an episode for a profile.
+  name: Start episode
+  description: Start a headache episode
   fields:
     profile_id:
+      name: Profile ID
+      description: Diary profile identifier
       required: true
       example: "patient"
       selector:
         text:
     started_at:
-      example: "2026-11-10T12:00:00+01:00"
+      name: Start time
+      description: ISO 8601 timestamp
       selector:
         text:
     headache_type:
-      example: "unspecified"
+      name: Headache type
+      description: Headache classification
       selector:
         text:
     notes:
+      name: Notes
+      description: Optional notes
       selector:
         text:
 end_episode:
-  name: End headache episode
+  name: End episode
+  description: Finish an active episode
   fields:
     profile_id:
+      name: Profile ID
+      description: Diary profile identifier
+      required: true
+      example: "patient"
+      selector:
+        text:
+    episode_id:
+      name: Episode ID
+      description: Episode identifier
+      selector:
+        text:
+    ended_at:
+      name: End time
+      description: ISO 8601 timestamp
+      selector:
+        text:
+record_past_episode:
+  name: Record past episode
+  description: Save a completed episode retrospectively
+  fields:
+    profile_id:
+      name: Profile ID
+      description: Diary profile identifier
+      required: true
+      example: "patient"
+      selector:
+        text:
+    started_at:
+      name: Start time
+      description: ISO 8601 timestamp
       required: true
       selector:
         text:
     ended_at:
+      name: End time
+      description: ISO 8601 timestamp
+      required: true
+      selector:
+        text:
+correct_active_start:
+  name: Correct active start
+  description: Correct the start time of an active episode
+  fields:
+    profile_id:
+      name: Profile ID
+      description: Diary profile identifier
+      required: true
+      example: "patient"
+      selector:
+        text:
+    started_at:
+      name: Start time
+      description: ISO 8601 timestamp
+      required: true
       selector:
         text:
 record_premonition:
   name: Record premonition
+  description: Record early warning symptoms
   fields:
     profile_id:
+      name: Profile ID
+      description: Diary profile identifier
       required: true
+      example: "patient"
       selector:
         text:
     symptoms:
+      name: Symptoms
+      description: Symptom list
       selector:
         object:
     occurred_at:
+      name: Event time
+      description: ISO 8601 timestamp
       selector:
         text:
 record_medication:
   name: Record medication
+  description: Record medication taken
   fields:
     profile_id:
+      name: Profile ID
+      description: Diary profile identifier
       required: true
+      example: "patient"
       selector:
         text:
     name:
+      name: Medication name
+      description: Name of medication
       required: true
       selector:
         text:
     dose:
+      name: Dose
+      description: Medication dose
       selector:
         number:
           min: 0
           max: 100000
           step: any
     unit:
+      name: Unit
+      description: Dose unit
       selector:
         text:
     episode_id:
+      name: Episode ID
+      description: Episode identifier
       selector:
         text:
     occurred_at:
+      name: Event time
+      description: ISO 8601 timestamp
       selector:
         text:
 record_pain:
-  name: Record pain intensity and zones
+  name: Record pain
+  description: Record pain intensity, locations and symptoms
   fields:
     profile_id:
+      name: Profile ID
+      description: Diary profile identifier
       required: true
+      example: "patient"
       selector:
         text:
     intensity:
+      name: Pain intensity
+      description: Pain level from 1 to 9
       required: true
       selector:
         number:
-          min: 0
-          max: 10
+          min: 1
+          max: 9
           step: 1
     zones:
+      name: Pain zones
+      description: Zone numbers from 1 to 19
       required: true
       selector:
         object:
+    symptoms:
+      name: Symptoms
+      description: Symptom list
+      selector:
+        object:
     episode_id:
+      name: Episode ID
+      description: Episode identifier
       selector:
         text:
     occurred_at:
+      name: Event time
+      description: ISO 8601 timestamp
+      selector:
+        text:
+list_history:
+  name: List history
+  description: Return diary records
+  fields:
+    profile_id:
+      name: Profile ID
+      description: Diary profile identifier
+      required: true
+      example: "patient"
+      selector:
+        text:
+    limit:
+      name: Limit
+      description: Maximum number of records
+      selector:
+        number:
+          min: 0
+          max: 1000
+          step: 1
+    start:
+      name: From
+      description: Start of date range
+      selector:
+        text:
+    end:
+      name: To
+      description: End of date range
+      selector:
+        text:
+export_csv:
+  name: Export CSV
+  description: Export diary records as CSV
+  fields:
+    profile_id:
+      name: Profile ID
+      description: Diary profile identifier
+      required: true
+      example: "patient"
+      selector:
+        text:
+    limit:
+      name: Limit
+      description: Maximum number of records
+      selector:
+        number:
+          min: 0
+          max: 1000
+          step: 1
+    start:
+      name: From
+      description: Start of date range
+      selector:
+        text:
+    end:
+      name: To
+      description: End of date range
       selector:
         text:
