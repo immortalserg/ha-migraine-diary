@@ -23,6 +23,13 @@ class MigraineHistoryView(HomeAssistantView):
     async def get(self, request: web.Request) -> web.Response:
         params = request.rel_url.query
         profile_id = params.get("profile_id", "patient")
+        if params.get("format") == "episodes":
+            try:
+                limit = int(params.get("limit", "1000"))
+                episodes = await self._store.list_episodes(profile_id, limit=limit)
+            except (ValueError, TypeError) as err:
+                return web.json_response({"error": str(err)}, status=400)
+            return web.json_response({"episodes": episodes}, headers={"Cache-Control": "no-store"})
         try:
             limit = int(params.get("limit", "200"))
             records = await self._store.list_history(
