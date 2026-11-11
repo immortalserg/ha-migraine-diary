@@ -24,7 +24,7 @@ This project is still a development preview. Back up Home Assistant before updat
 3. Go to **Settings → Devices & services → Add integration** and select **Migraine Diary**.
 4. Copy `frontend/migraine-diary-card.js` into `config/www/migraine-diary/migraine-diary-card.js`.
 5. Add the Lovelace JavaScript resource `/local/migraine-diary/migraine-diary-card.js` as a **JavaScript module**.
-6. Add a manual Lovelace card with type `custom:migraine-diary-card`. If using the head illustration, copy the corresponding SVG asset into `config/www/migraine-diary/head.svg` and configure `svg_url` accordingly.
+6. Add a manual Lovelace card with type `custom:migraine-diary-card`. If the card references an external SVG via `svg_url`, ensure that the referenced file is also accessible under `/local/`.
 
 ### Language settings
 
@@ -32,7 +32,15 @@ Choose **Automatic** or a specific language under the integration's **Configure*
 
 ### HACS
 
-The repository contains `hacs.json`, but HACS installation and update behavior should be verified before declaring a stable release. The frontend card resource may require manual setup.
+For testing as a **custom HACS repository**:
+
+1. Open HACS in Home Assistant, open its menu, and select **Custom repositories**.
+2. Add `https://github.com/immortalserg/ha-migraine-diary` with category **Integration**.
+3. Find **Migraine Diary** in HACS and install it, then restart Home Assistant.
+4. Add the integration under **Settings → Devices & services**.
+5. **Install the companion Lovelace card manually** using steps 4–6 above. HACS installing the integration does not install the separate `frontend/` directory as a Lovelace resource.
+
+This is an unverified development installation path, not a claim of HACS default-store inclusion. Test installation and upgrades on a backed-up Home Assistant instance before release.
 
 ## Architecture
 
