@@ -26,7 +26,7 @@ class MigraineBinarySensor(BinarySensorEntity):
     """on = active episode; off = no active episode."""
 
     _attr_translation_key = "migraine_active"
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _attr_icon = "mdi:head-flash"
     _attr_should_poll = True
 
