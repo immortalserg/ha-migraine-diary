@@ -27,7 +27,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(entities)
 
 class DiaryToggle(SwitchEntity, RestoreEntity):
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _attr_icon = "mdi:head-flash"
 
     @property
