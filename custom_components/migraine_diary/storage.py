@@ -344,11 +344,13 @@ class DiaryStore:
 
     async def list_history(
         self, profile_id: str, *, limit: int = 200,
-        start: str | None = None, end: str | None = None
+        start: str | None = None, end: str | None = None, offset: int = 0
     ) -> list[dict]:
         """Read a bounded timeline of episodes and events, newest first."""
         if not 1 <= limit <= 1000:
             raise ValueError("History limit must be between 1 and 1000")
+        if offset < 0:
+            raise ValueError("History offset must not be negative")
         start_at = _iso(start) if start else None
         end_at = _iso(end) if end else None
         if start_at and end_at and start_at > end_at:
@@ -378,10 +380,10 @@ class DiaryStore:
                 " FROM episodes WHERE " + " AND ".join(where_start)
                 + " UNION ALL SELECT 'end:' || id,id,'end',ended_at,'{}',ended_at"
                 " FROM episodes WHERE " + " AND ".join(where_end)
-                + " ORDER BY date DESC,recorded_at DESC LIMIT ?"
+                + " ORDER BY date DESC,recorded_at DESC,id DESC LIMIT ? OFFSET ?"
             )
             results = conn.execute(
-                query, (*event_args, *start_args, *end_args, limit)
+                query, (*event_args, *start_args, *end_args, limit, offset)
             ).fetchall()
             symptom_names = [
                 "Сильная ударная боль", "Пульсирующая боль",
