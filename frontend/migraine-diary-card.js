@@ -10,16 +10,21 @@ const WORDS = {
   de: {title:"Migränetagebuch",start:"Beginn",end:"Ende",premonition:"Vorboten",pain:"Schmerzstärke",zones:"Schmerzzonen",symptoms:"Symptome",medications:"Medikamente",record:"Schmerz speichern",noEpisode:"Kein aktiver Anfall",active:"Anfall läuft",error:"Fehler",nausea:"Übelkeit",vomiting:"Erbrechen",light:"Lichtempfindlichkeit",noise:"Geräuschempfindlichkeit",neck:"Nackenschmerzen",dizzy:"Schwindel",blur:"Verschwommenes Sehen",fatigue:"Müdigkeit"},
   it: {title:"Diario dell'emicrania",start:"Inizio",end:"Fine",premonition:"Sintomi premonitori",pain:"Intensità del dolore",zones:"Zone dolorose",symptoms:"Sintomi",medications:"Farmaci",record:"Registra dolore",noEpisode:"Nessun attacco attivo",active:"Attacco in corso",error:"Errore",nausea:"Nausea",vomiting:"Vomito",light:"Sensibilità alla luce",noise:"Sensibilità ai suoni",neck:"Dolore al collo",dizzy:"Vertigini",blur:"Vista offuscata",fatigue:"Stanchezza"}
 };
+const SECTION_IDS=["actions","zones","intensity","symptoms","medications"];
+const DEFAULT_SECTION_ORDER=[...SECTION_IDS];
+const DEFAULT_LABELS={title:true,zones:true,intensity:true,symptoms:true,medications:true};
 const SYMPTOMS=["Сильная ударная боль","Пульсирующая боль","Пульсирующая периодическая боль","Усиливается при движении","Тошнота","Рвота","Светочувствительность","Чувствительность к шуму","Боль в шее","Головокружение","Насморк","Бессонница","Подавленное настроение","Тревожность","Чувствительность к запахам","Жар / ощущение жара","Звон в ушах","Усталость","Расплывчатое зрение","Перепады настроения"];
 class MigraineDiaryCard extends HTMLElement {
   setConfig(config) {
-    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], ...config};
+    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, ...config};
     for(const key of ["button_font_size","button_icon_size","action_font_size","action_icon_size"]){
       const value=Number(this._config[key]);
       if(!Number.isFinite(value)||value<6||value>64)throw new Error(key+" must be 6–64 pixels");
       this._config[key]=value;
     }
     if (!Array.isArray(this._config.medications)) throw new Error("medications must be an array");
+    if(!Array.isArray(this._config.section_order) || this._config.section_order.length!==SECTION_IDS.length || new Set(this._config.section_order).size!==SECTION_IDS.length || this._config.section_order.some(id=>!SECTION_IDS.includes(id)))throw Error("section_order must contain actions, zones, intensity, symptoms, medications exactly once");
+    if(typeof this._config.show_labels==="object" && (this._config.show_labels===null || Array.isArray(this._config.show_labels)))throw Error("show_labels must be a boolean or an object");
     this._zones = new Set(); this._symptoms = new Set(); this._intensity = 5;
     this._loadedAssessmentKey = null;
     this._draftRestoredKey = null;
@@ -149,6 +154,25 @@ class MigraineDiaryCard extends HTMLElement {
     }
     finally {this._busy=false;this._render();}
   }
+  _showLabel(key){
+    const value=this._config.show_labels;
+    return typeof value==="boolean"?value:(value[key]??DEFAULT_LABELS[key]);
+  }
+  async _exportCsv(){
+    if(this._busy||!this._hass)return;
+    this._busy=true;this._message="";this._render();
+    try{
+      const params=new URLSearchParams({profile_id:this._config.profile_id,limit:"1000",format:"csv"});
+      const token=this._hass.auth?.data?.access_token;
+      if(!token)throw Error("Home Assistant access token unavailable");
+      const response=await fetch("/api/migraine_diary/history?"+params.toString(),{headers:{Authorization:"Bearer "+token}});
+      if(!response.ok)throw Error("CSV export HTTP "+response.status);
+      const blob=await response.blob();const url=URL.createObjectURL(blob);
+      const link=document.createElement("a");link.href=url;link.download="migraine-diary.csv";this.shadowRoot.append(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }catch(error){this._message=this._t("error")+": "+(error?.message||String(error));}
+    finally{this._busy=false;this._render();}
+  }
   _render(){
     if(!this.shadowRoot || !this._config)return;
     const root=this.shadowRoot;root.replaceChildren();
@@ -179,10 +203,10 @@ class MigraineDiaryCard extends HTMLElement {
       `;
     root.append(style);
     const card=document.createElement("ha-card");root.append(card);
-    const h=document.createElement("h2");h.textContent=this._t("title");card.append(h);
+    const h=document.createElement("h2");h.textContent=this._t("title");if(this._showLabel("title"))card.append(h);
     const active=this._active();
     const status=document.createElement("div");status.className="status";status.textContent=this._t(active?"active":"noEpisode");card.append(status);
-    const actions=document.createElement("div");actions.className="row";card.append(actions);
+    const actions=document.createElement("div");actions.className="row";
     actions.append(this._button(this._t("start"),()=>this._call("start_episode",{}),active));
     actions.append(this._button(this._t("end"),()=>this._call("end_episode",{episode_id:this._hass?.states?.[this._config.active_entity || "binary_sensor.migren"]?.attributes?.episode_id}),!active));
     actions.append(this._button(this._t("premonition"),()=>this._call("record_premonition",{symptoms:[...this._symptoms]})));
@@ -191,7 +215,7 @@ class MigraineDiaryCard extends HTMLElement {
       zones:[...this._zones].sort((a,b)=>a-b),
       symptoms:[...this._symptoms]
     }),!active));
-    const zonesHeading=document.createElement("h3");zonesHeading.textContent=this._t("zones");card.append(zonesHeading);
+    const zonesHeading=document.createElement("h3");zonesHeading.textContent=this._t("zones");if(this._showLabel("zones"))card.append(zonesHeading);
     if(this._svgLoaded){
       const holder=document.createElement("div");holder.className="map";
       // The SVG comes from a local file; sanitized before DOM insertion.
@@ -228,10 +252,10 @@ class MigraineDiaryCard extends HTMLElement {
       const fallback=document.createElement("div");fallback.className="row";card.append(fallback);
       for(let i=1;i<=19;i++)fallback.append(this._button(String(i),()=>this._toggleZone(i),false,this._zones.has(i)));
     }
-    const intensity=document.createElement("h3");intensity.textContent=this._t("pain")+" (1–9): "+this._intensity;card.append(intensity);
+    const intensity=document.createElement("h3");intensity.textContent=this._t("pain")+" (1–9): "+this._intensity;if(this._showLabel("intensity"))card.append(intensity);
     const levels=document.createElement("div");levels.className="row";card.append(levels);
     if(!this._svgLoaded) for(let i=1;i<=9;i++)levels.append(this._button(String(i),()=>this._setLevel(i),false,this._intensity===i));
-    const symptomHeading=document.createElement("h3");symptomHeading.textContent=this._t("symptoms");card.append(symptomHeading);
+    const symptomHeading=document.createElement("h3");symptomHeading.textContent=this._t("symptoms");if(this._showLabel("symptoms"))card.append(symptomHeading);
     const symptoms=document.createElement("div");symptoms.className="symptom-grid";card.append(symptoms);
     for(let i=0;i<SYMPTOMS.length;i++){
       const btn=document.createElement("button");btn.type="button";btn.className="symptom-btn";
@@ -249,7 +273,7 @@ class MigraineDiaryCard extends HTMLElement {
       });
       symptoms.append(btn);
     }
-    const medications=document.createElement("h3");medications.textContent=this._t("medications");card.append(medications);
+    const medications=document.createElement("h3");medications.textContent=this._t("medications");if(this._showLabel("medications"))card.append(medications);
     const pills=document.createElement("div");pills.className="medication-grid";card.append(pills);
     for(const med of this._config.medications){
       const name=typeof med==="string"?med:med.name;
@@ -264,6 +288,28 @@ class MigraineDiaryCard extends HTMLElement {
       btn.addEventListener("click",()=>this._call("record_medication",payload));
       pills.append(btn);
     }
+    // Reorder complete sections while retaining their existing controls and listeners.
+    const sections={
+      actions:[actions],
+      zones:[zonesHeading,...Array.from(card.children).filter(el=>el.classList?.contains("map") || (el.classList?.contains("row") && el!==actions && el!==levels))],
+      intensity:[intensity,levels],
+      symptoms:[symptomHeading,symptoms],
+      medications:[medications,pills]
+    };
+    // A fallback zone selector is a .row; identify it before moving nodes.
+    const zoneNodes=sections.zones.slice(1);
+    for(const node of zoneNodes)node.remove();
+    for(const key of this._config.section_order){
+      for(const node of sections[key]){
+        if(node===zonesHeading && !this._showLabel("zones"))continue;
+        if(node===intensity && !this._showLabel("intensity"))continue;
+        if(node===symptomHeading && !this._showLabel("symptoms"))continue;
+        if(node===medications && !this._showLabel("medications"))continue;
+        card.append(node);
+      }
+    }
+    const exportButton=this._button("Экспорт CSV",()=>this._exportCsv());
+    exportButton.style.marginTop="14px";card.append(exportButton);
     if(this._message){const msg=document.createElement("div");msg.className="message";msg.textContent=this._message;card.append(msg);}
   }
 }
