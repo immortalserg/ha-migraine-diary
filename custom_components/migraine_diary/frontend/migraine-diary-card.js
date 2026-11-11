@@ -681,6 +681,21 @@ class MigraineDiaryCard extends HTMLElement {
       const btn=this._tile(name,"mdi:pill",this._config.medication_display,()=>this._call("record_medication",payload),false,"medication-btn");
       pills.append(btn);
     }
+    const foodHeading=document.createElement("h3");foodHeading.textContent=this._language()==="ru"?"Питание":this._language()==="fr"?"Alimentation":this._language()==="de"?"Ernährung":"Food";
+    const foodForm=document.createElement("form");foodForm.style.cssText="display:grid;gap:8px";
+    const foodName=document.createElement("input");foodName.required=true;foodName.maxLength=200;foodName.placeholder=this._language()==="ru"?"Продукт или блюдо":"Food or meal";
+    const foodQuantity=document.createElement("input");foodQuantity.maxLength=100;foodQuantity.placeholder=this._language()==="ru"?"Количество (необязательно)":"Quantity (optional)";
+    const foodNotes=document.createElement("input");foodNotes.maxLength=500;foodNotes.placeholder=this._language()==="ru"?"Примечание (необязательно)":"Notes (optional)";
+    const foodSubmit=document.createElement("button");foodSubmit.type="submit";foodSubmit.textContent=this._language()==="ru"?"Записать приём пищи":"Save food";
+    foodForm.append(foodName,foodQuantity,foodNotes,foodSubmit);
+    foodForm.addEventListener("submit",async event=>{
+      event.preventDefault();
+      const name=foodName.value.trim();if(!name||this._busy)return;
+      const payload={name};
+      if(foodQuantity.value.trim())payload.quantity=foodQuantity.value.trim();
+      if(foodNotes.value.trim())payload.notes=foodNotes.value.trim();
+      await this._call("record_food",payload);
+    });
     // Assemble each logical section in its own wrapper, preserving spacing
     // even when all headings are hidden.
     const mapNode=Array.from(card.children).find(el=>el.classList?.contains("map"));
@@ -703,21 +718,6 @@ class MigraineDiaryCard extends HTMLElement {
       }
       card.append(section);
     }
-    const foodHeading=document.createElement("h3");foodHeading.textContent=this._language()==="ru"?"Питание":this._language()==="fr"?"Alimentation":this._language()==="de"?"Ernährung":"Food";
-    const foodForm=document.createElement("form");foodForm.style.cssText="display:grid;gap:8px";
-    const foodName=document.createElement("input");foodName.required=true;foodName.maxLength=200;foodName.placeholder=this._language()==="ru"?"Продукт или блюдо":"Food or meal";
-    const foodQuantity=document.createElement("input");foodQuantity.maxLength=100;foodQuantity.placeholder=this._language()==="ru"?"Количество (необязательно)":"Quantity (optional)";
-    const foodNotes=document.createElement("input");foodNotes.maxLength=500;foodNotes.placeholder=this._language()==="ru"?"Примечание (необязательно)":"Notes (optional)";
-    const foodSubmit=document.createElement("button");foodSubmit.type="submit";foodSubmit.textContent=this._language()==="ru"?"Записать приём пищи":"Save food";
-    foodForm.append(foodName,foodQuantity,foodNotes,foodSubmit);
-    foodForm.addEventListener("submit",async event=>{
-      event.preventDefault();
-      const name=foodName.value.trim();if(!name||this._busy)return;
-      const payload={name};
-      if(foodQuantity.value.trim())payload.quantity=foodQuantity.value.trim();
-      if(foodNotes.value.trim())payload.notes=foodNotes.value.trim();
-      await this._call("record_food",payload);
-    });
     const exportButton=this._button(this._t("export"),()=>this._exportCsv());
     exportButton.style.marginTop="14px";card.append(exportButton);
     if(this._message){const msg=document.createElement("div");msg.className="message";msg.textContent=this._message;card.append(msg);}
