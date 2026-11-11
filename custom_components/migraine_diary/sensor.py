@@ -1,7 +1,7 @@
 """Sensors exposing the current migraine episode to Home Assistant."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -111,14 +111,7 @@ class MigraineLastRecordSensor(SensorEntity):
                 attrs["симптомы"] = symptoms
         elif kind == "medication":
             attrs["лекарство"] = payload.get("name")
-        try:
-            recorded_time = datetime.fromisoformat(event["saved_at"].replace("Z", "+00:00"))
-            recorded_time = recorded_time.astimezone(self.hass.config.time_zone)
-            time_label = recorded_time.strftime("%d.%m.%Y %H:%M:%S")
-        except (ValueError, TypeError):
-            time_label = str(event["saved_at"])
-
-        parts = [time_label, label]
+        parts = [label]
         if kind in ("start", "state_update", "pain"):
             parts.append(f"уровень: {attrs['уровень']}")
             parts.append("зоны: " + (", ".join(map(str, attrs["зоны"])) or "нет"))
