@@ -1,5 +1,6 @@
 """Migraine pain level, persisted using Home Assistant state restoration."""
 from homeassistant.components.number import NumberEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -14,7 +15,18 @@ class MigraineLevel(NumberEntity, RestoreEntity):
     _attr_native_step = 1
     _attr_mode = "slider"
 
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={("migraine_diary", self._entry_id)},
+            name="Migraine Diary",
+            manufacturer="Migraine Diary",
+            model="Headache diary",
+            configuration_url="https://github.com/immortalserg/ha-migraine-diary",
+        )
+
     def __init__(self, entry_id):
+        self._entry_id = entry_id
         self._attr_unique_id = f"{entry_id}_migraine_level"
         self.entity_id = "number.migraine_level"
         self._attr_native_value = 5
