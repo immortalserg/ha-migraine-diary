@@ -54,4 +54,4 @@ This project is a recording aid, not a diagnostic or medical decision-making too
 
 ## License
 
-A distribution license has not yet been selected. Do not assume permission to redistribute or modify the project until a license is published.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
