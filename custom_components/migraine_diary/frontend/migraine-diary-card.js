@@ -162,6 +162,7 @@ const EXTRA_WORDS={
     "loadError": "Zäitraim konnten net geluede ginn: "
   }
 };
+const BUNDLED_SVG_URL="/migraine_diary/frontend/head.svg";
 const SECTION_IDS=["actions","zones","intensity","symptoms","medications","food"];
 const DEFAULT_SECTION_ORDER=[...SECTION_IDS];
 const DEFAULT_LABELS={title:true,zones:true,intensity:true,symptoms:true,medications:true};
@@ -280,7 +281,8 @@ const SYMPTOM_TRANSLATIONS={
 };
 class MigraineDiaryCard extends HTMLElement {
   setConfig(config) {
-    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/migraine_diary/frontend/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", action_button_color:"", action_icon_color:"", medication_button_color:"", medication_icon_color:"", show_food:true, ...config};
+    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", action_button_color:"", action_icon_color:"", medication_button_color:"", medication_icon_color:"", show_food:true, ...config};
+    delete this._config.svg_url; // Legacy configuration is ignored: the SVG is bundled.
     for(const key of ["button_font_size","button_icon_size","action_font_size","action_icon_size"]){
       const value=Number(this._config[key]);
       if(!Number.isFinite(value)||value<6||value>64)throw new Error(key+" must be 6–64 pixels");
@@ -394,7 +396,7 @@ class MigraineDiaryCard extends HTMLElement {
   _active(){return this._pendingActive !== undefined ? this._pendingActive : this._entityActive();}
   async _loadSvg(){
     try {
-      const response=await fetch(this._config.svg_url,{credentials:"same-origin"});
+      const response=await fetch(BUNDLED_SVG_URL,{credentials:"same-origin"});
       if(!response.ok) throw new Error("SVG HTTP "+response.status);
       const raw=await response.text();
       const doc=new DOMParser().parseFromString(raw,"image/svg+xml");
@@ -402,7 +404,7 @@ class MigraineDiaryCard extends HTMLElement {
       const root=doc.documentElement;
       if(root.localName !== "svg") throw new Error("Not an SVG");
       // SVG is bundled by the project/user, never accept arbitrary remote SVG.
-      if(/^https?:\/\//i.test(this._config.svg_url)) throw new Error("Only local SVG paths allowed");
+      if(/^https?:\/\//i.test(BUNDLED_SVG_URL)) throw new Error("Only local SVG paths allowed");
       root.querySelectorAll("script,foreignObject,iframe,object,embed").forEach(n=>n.remove());
       root.querySelectorAll("*").forEach(node=>{
         [...node.attributes].forEach(attr=>{
