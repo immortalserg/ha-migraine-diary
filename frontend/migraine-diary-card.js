@@ -368,7 +368,14 @@ class MigraineDiaryCard extends HTMLElement {
 
   _language() {
     const entityId=this._config.active_entity || "binary_sensor.migren";
-    const integrationLanguage=this._hass?.states?.[entityId]?.attributes?.language;
+    const states=this._hass?.states || {};
+    const integrationLanguage=states[entityId]?.attributes?.language
+      || states["sensor.migraine_diary_last_record"]?.attributes?.language
+      || Object.entries(states).find(([id, state]) =>
+        id.startsWith("binary_sensor.") &&
+        state?.attributes?.language &&
+        state?.attributes?.friendly_name?.includes("Migraine")
+      )?.[1]?.attributes?.language;
     const selected=this._config.language && this._config.language!=="auto"
       ? this._config.language
       : integrationLanguage && integrationLanguage!=="auto"
