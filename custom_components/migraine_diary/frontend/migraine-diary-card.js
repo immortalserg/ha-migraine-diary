@@ -446,19 +446,63 @@ class MigraineDiaryCard extends HTMLElement {
     this._busy=true;this._message="";this._render();
     try {
       await this._hass.callService("migraine_diary",service,{profile_id:this._config.profile_id,...data});
-      if(service==="record_food" && this._foodHistory!==null)await this._loadFoodHistory();
+      if(["record_food","update_food","delete_food"].includes(service) && this._foodHistory!==null)await this._loadFoodHistory();
       // Update controls as soon as HA confirms the action; do not wait for
       // the state_changed websocket event (which may arrive seconds later).
       if(service==="start_episode" || service==="end_episode"){
         this._pendingActive=service==="start_episode";
         if(this._entityActive()===this._pendingActive)this._pendingActive=undefined;
       }
+      return true;
     }
     catch(e){
       this._pendingActive=undefined;
       this._message=this._t("error")+": "+(e?.message || String(e));
+      return false;
     }
     finally {this._busy=false;this._render();}
+  }
+  _editFoodRecord(item){
+    if(this._busy)return;
+    const ru=this._language()==="ru";
+    const dialog=document.createElement("dialog");
+    dialog.style.cssText="border:1px solid var(--divider-color);border-radius:12px;padding:20px;background:var(--card-background-color);color:var(--primary-text-color);width:min(420px,90vw)";
+    const title=document.createElement("h3");title.textContent=ru?"Редактировать питание":"Edit food record";dialog.append(title);
+    const form=document.createElement("form");form.style.cssText="display:grid;gap:10px";
+    const field=(labelText,value,maxLength,type="text")=>{
+      const label=document.createElement("label");label.textContent=labelText;
+      const input=document.createElement("input");input.type=type;input.value=value||"";input.maxLength=maxLength;input.style.cssText="display:block;width:100%;box-sizing:border-box;padding:8px;margin-top:4px";
+      label.append(input);form.append(label);return input;
+    };
+    const name=field(ru?"Продукт":"Food",item.food,200);name.required=true;
+    const quantity=field(ru?"Количество":"Quantity",item.quantity,100);
+    const notes=field(ru?"Примечание":"Notes",item.notes,500);
+    const date=new Date(item.date);
+    const localDate=Number.isNaN(date.getTime())?"":new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    const time=field(ru?"Дата и время":"Date and time",localDate,30,"datetime-local");time.required=true;
+    const error=document.createElement("p");error.style.color="var(--error-color)";form.append(error);
+    const buttons=document.createElement("div");buttons.style.cssText="display:flex;gap:8px;flex-wrap:wrap";
+    const save=document.createElement("button");save.type="submit";save.textContent=ru?"Сохранить":"Save";
+    const cancel=document.createElement("button");cancel.type="button";cancel.textContent=ru?"Отмена":"Cancel";cancel.addEventListener("click",()=>dialog.close());
+    buttons.append(save,cancel);form.append(buttons);dialog.append(form);
+    form.addEventListener("submit",async event=>{
+      event.preventDefault();if(this._busy)return;
+      const occurred=new Date(time.value);
+      if(!name.value.trim()||Number.isNaN(occurred.getTime())||occurred.getTime()>Date.now()){
+        error.textContent=ru?"Проверьте название и дату (не в будущем)":"Check name and date (not in future)";return;
+      }
+      save.disabled=true;cancel.disabled=true;
+      const ok=await this._call("update_food",{event_id:item.id,name:name.value.trim(),quantity:quantity.value.trim(),notes:notes.value.trim(),occurred_at:occurred.toISOString()});
+      if(ok)dialog.close();else{error.textContent=this._message;save.disabled=false;cancel.disabled=false;}
+    });
+    dialog.addEventListener("close",()=>dialog.remove());
+    this.shadowRoot.append(dialog);dialog.showModal();
+  }
+  async _deleteFoodRecord(item){
+    if(this._busy)return;
+    const ru=this._language()==="ru";
+    if(!window.confirm((ru?"Удалить запись питания: ":"Delete food record: ")+(item.food||"")+"?"))return;
+    await this._call("delete_food",{event_id:item.id});
   }
   async _loadFoodHistory(){
     if(this._foodHistoryLoading || !this._hass)return;
@@ -758,6 +802,12 @@ class MigraineDiaryCard extends HTMLElement {
         const date=new Date(item.date);
         const dateText=Number.isNaN(date.getTime())?item.date:date.toLocaleString(this._language()==="lu"?"lb":this._language());
         line.textContent=dateText+" — "+item.food+(item.quantity?" · "+item.quantity:"")+(item.notes?" · "+item.notes:"");
+        const controls=document.createElement("div");controls.style.cssText="display:flex;gap:8px;margin:5px 0";
+        const edit=document.createElement("button");edit.type="button";edit.textContent=this._language()==="ru"?"Редактировать":"Edit";
+        edit.addEventListener("click",()=>this._editFoodRecord(item));
+        const remove=document.createElement("button");remove.type="button";remove.textContent=this._language()==="ru"?"Удалить":"Delete";
+        remove.addEventListener("click",()=>this._deleteFoodRecord(item));
+        controls.append(edit,remove);line.append(controls);
         foodHistory.append(line);
       }
     }

@@ -28,7 +28,7 @@ def _notify_record_saved(hass: HomeAssistant, event: dict) -> None:
     else:
         _LOGGER.warning("Last-record sensor not registered for saved event %s", event["event_id"])
 
-SERVICE_NAMES = ("start_episode", "end_episode", "record_past_episode", "correct_active_start", "record_premonition", "record_medication", "record_food", "record_pain", "list_history", "export_csv")
+SERVICE_NAMES = ("start_episode", "end_episode", "record_past_episode", "correct_active_start", "record_premonition", "record_medication", "record_food", "update_food", "delete_food", "record_pain", "list_history", "export_csv")
 
 PROFILE = vol.Required("profile_id")
 TIMESTAMP = vol.Optional("occurred_at")
@@ -53,6 +53,12 @@ SCHEMAS = {
                                vol.Required("name"): vol.All(cv.string, vol.Length(min=1, max=200)),
                                vol.Optional("quantity"): vol.All(cv.string, vol.Length(max=100)),
                                vol.Optional("notes"): vol.All(cv.string, vol.Length(max=500))}),
+    "update_food": vol.Schema({PROFILE: cv.string, vol.Required("event_id"): cv.string,
+                               vol.Required("name"): vol.All(cv.string, vol.Length(min=1, max=200)),
+                               vol.Optional("quantity"): vol.All(cv.string, vol.Length(max=100)),
+                               vol.Optional("notes"): vol.All(cv.string, vol.Length(max=500)),
+                               TIMESTAMP: cv.string}),
+    "delete_food": vol.Schema({PROFILE: cv.string, vol.Required("event_id"): cv.string}),
     "record_pain": vol.Schema({PROFILE: cv.string, TIMESTAMP: cv.string,
                                EPISODE: cv.string,
                                vol.Required("intensity"): vol.All(vol.Coerce(int), vol.Range(min=1, max=9)),
@@ -98,6 +104,17 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 writer.writeheader()
                 writer.writerows(records)
                 return {"filename": "migraine-diary.csv", "csv": buffer.getvalue(), "count": len(records)}
+            if name in ("update_food", "delete_food"):
+                event_id = data["event_id"]
+                if name == "update_food":
+                    await store.update_food(
+                        profile_id, event_id, name=data["name"],
+                        quantity=data.get("quantity", ""), notes=data.get("notes", ""),
+                        occurred_at=data.get("occurred_at"),
+                    )
+                else:
+                    await store.delete_food(profile_id, event_id)
+                return {"event_id": event_id}
             if name == "correct_active_start":
                 episode_id = await store.correct_active_start(profile_id, data["started_at"])
                 async_dispatcher_send(hass, SIGNAL_EPISODE_CHANGED)
