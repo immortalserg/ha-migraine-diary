@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
@@ -29,8 +30,19 @@ class MigraineBinarySensor(BinarySensorEntity):
     _attr_icon = "mdi:head-flash"
     _attr_should_poll = True
 
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={("migraine_diary", self._entry_id)},
+            name="Migraine Diary",
+            manufacturer="Migraine Diary",
+            model="Headache diary",
+            configuration_url="https://github.com/immortalserg/ha-migraine-diary",
+        )
+
     def __init__(self, store: DiaryStore, entry_id: str) -> None:
         self._store = store
+        self._entry_id = entry_id
         self._attr_unique_id = f"{entry_id}_migren"
         self._attr_is_on = False
         self._attr_extra_state_attributes = {}
