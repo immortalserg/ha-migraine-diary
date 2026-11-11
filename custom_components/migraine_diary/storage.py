@@ -135,6 +135,12 @@ class DiaryStore:
                 current = conn.execute("SELECT profile_id,started_at FROM episodes WHERE id=? AND ended_at IS NULL",(episode_id,)).fetchone()
                 if current is None or ended_at < current["started_at"]:
                     raise ValueError("Приступ не найден или окончание раньше начала")
+                latest_event = conn.execute(
+                    "SELECT MAX(occurred_at) AS latest FROM events WHERE episode_id=?",
+                    (episode_id,),
+                ).fetchone()["latest"]
+                if latest_event is not None and ended_at < latest_event:
+                    raise ValueError("Окончание раньше последней записи этого приступа")
                 conflict = conn.execute(
                     """SELECT id FROM episodes WHERE profile_id=? AND id<>?
                        AND started_at<? AND (ended_at IS NULL OR ended_at>?)
@@ -150,6 +156,33 @@ class DiaryStore:
                 if cursor.rowcount != 1:
                     raise ValueError("Episode not active, not found, or end before start")
             await asyncio.to_thread(self._run, op)
+
+    async def correct_active_start(self, profile_id: str, started_at: str) -> str:
+        """Move the active episode start earlier, without overlapping another episode."""
+        start = _iso(started_at)
+        if start > utc_now():
+            raise ValueError("Начало не может быть в будущем")
+        async with self._lock:
+            def op(conn):
+                active = conn.execute(
+                    "SELECT id,started_at FROM episodes WHERE profile_id=? AND ended_at IS NULL",
+                    (profile_id,),
+                ).fetchone()
+                if active is None:
+                    raise ValueError("Нет активного приступа для исправления начала")
+                if start > active["started_at"]:
+                    raise ValueError("Исправленное начало должно быть не позже записанного")
+                conflict = conn.execute(
+                    """SELECT id FROM episodes WHERE profile_id=? AND id<>?
+                       AND started_at<? AND (ended_at IS NULL OR ended_at>?)
+                       LIMIT 1""",
+                    (profile_id, active["id"], active["started_at"], start),
+                ).fetchone()
+                if conflict:
+                    raise ValueError("Исправленное начало пересекается с предыдущим приступом")
+                conn.execute("UPDATE episodes SET started_at=? WHERE id=?", (start, active["id"]))
+                return active["id"]
+            return await asyncio.to_thread(self._run, op)
 
     async def create_past_episode(self, profile_id: str, started_at: str, ended_at: str) -> str:
         """Atomically add an already completed episode without changing active state."""
