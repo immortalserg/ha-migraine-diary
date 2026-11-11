@@ -8,7 +8,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 class MigraineLevel(NumberEntity, RestoreEntity):
     _attr_has_entity_name = False
-    _attr_name = "Migraine level"
+    _attr_translation_key = "migraine_level"
     _attr_icon = "mdi:head-flash"
     _attr_native_min_value = 1
     _attr_native_max_value = 9
