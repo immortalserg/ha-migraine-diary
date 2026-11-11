@@ -102,5 +102,157 @@
         }
       }
     }
+  },
+  "services": {
+    "start_episode": {
+      "name": "Start episode",
+      "fields": {
+        "profile_id": {
+          "name": "Profile"
+        },
+        "started_at": {
+          "name": "Start time"
+        },
+        "headache_type": {
+          "name": "Headache type"
+        },
+        "notes": {
+          "name": "Notes"
+        }
+      }
+    },
+    "end_episode": {
+      "name": "End episode",
+      "fields": {
+        "profile_id": {
+          "name": "Profile"
+        },
+        "episode_id": {
+          "name": "Episode ID"
+        },
+        "ended_at": {
+          "name": "End time"
+        }
+      }
+    },
+    "record_past_episode": {
+      "name": "Record past episode",
+      "fields": {
+        "profile_id": {
+          "name": "Profile"
+        },
+        "started_at": {
+          "name": "Start time"
+        },
+        "ended_at": {
+          "name": "End time"
+        }
+      }
+    },
+    "correct_active_start": {
+      "name": "Correct active start",
+      "fields": {
+        "profile_id": {
+          "name": "Profile"
+        },
+        "started_at": {
+          "name": "Start time"
+        }
+      }
+    },
+    "record_premonition": {
+      "name": "Record premonition",
+      "fields": {
+        "profile_id": {
+          "name": "Profile"
+        },
+        "symptoms": {
+          "name": "Symptoms"
+        },
+        "occurred_at": {
+          "name": "Event time"
+        }
+      }
+    },
+    "record_medication": {
+      "name": "Record medication",
+      "fields": {
+        "profile_id": {
+          "name": "Profile"
+        },
+        "name": {
+          "name": "Medication"
+        },
+        "dose": {
+          "name": "Dose"
+        },
+        "unit": {
+          "name": "Unit"
+        },
+        "episode_id": {
+          "name": "Episode ID"
+        },
+        "occurred_at": {
+          "name": "Event time"
+        }
+      }
+    },
+    "record_pain": {
+      "name": "Record pain",
+      "fields": {
+        "profile_id": {
+          "name": "Profile"
+        },
+        "intensity": {
+          "name": "Intensity"
+        },
+        "zones": {
+          "name": "Pain zones"
+        },
+        "symptoms": {
+          "name": "Symptoms"
+        },
+        "episode_id": {
+          "name": "Episode ID"
+        },
+        "occurred_at": {
+          "name": "Event time"
+        }
+      }
+    },
+    "list_history": {
+      "name": "List history",
+      "fields": {
+        "profile_id": {
+          "name": "Profile"
+        },
+        "limit": {
+          "name": "Limit"
+        },
+        "start": {
+          "name": "From"
+        },
+        "end": {
+          "name": "To"
+        }
+      }
+    },
+    "export_csv": {
+      "name": "Export CSV",
+      "fields": {
+        "profile_id": {
+          "name": "Profile"
+        },
+        "limit": {
+          "name": "Limit"
+        },
+        "start": {
+          "name": "From"
+        },
+        "end": {
+          "name": "To"
+        }
+      }
+    }
   }
 }
