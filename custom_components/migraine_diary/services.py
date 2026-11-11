@@ -93,7 +93,7 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 if name == "list_history":
                     return {"records": records}
                 buffer = io.StringIO()
-                columns = ["date", "event", "level", "zones", "symptoms", "medication", "dose", "unit", "episode_id", "id"]
+                columns = ["date", "event", "level", "zones", "symptoms", "medication", "food", "quantity", "notes", "dose", "unit", "episode_id", "id"]
                 writer = csv.DictWriter(buffer, fieldnames=columns, extrasaction="ignore", delimiter=";")
                 writer.writeheader()
                 writer.writerows(records)
