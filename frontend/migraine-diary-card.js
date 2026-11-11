@@ -166,6 +166,118 @@ const SECTION_IDS=["actions","zones","intensity","symptoms","medications"];
 const DEFAULT_SECTION_ORDER=[...SECTION_IDS];
 const DEFAULT_LABELS={title:true,zones:true,intensity:true,symptoms:true,medications:true};
 const SYMPTOMS=["Сильная ударная боль","Пульсирующая боль","Пульсирующая периодическая боль","Усиливается при движении","Тошнота","Рвота","Светочувствительность","Чувствительность к шуму","Боль в шее","Головокружение","Насморк","Бессонница","Подавленное настроение","Тревожность","Чувствительность к запахам","Жар / ощущение жара","Звон в ушах","Усталость","Расплывчатое зрение","Перепады настроения"];
+const SYMPTOM_TRANSLATIONS={
+  "en": [
+    "Severe stabbing pain",
+    "Throbbing pain",
+    "Intermittent throbbing pain",
+    "Worse with movement",
+    "Nausea",
+    "Vomiting",
+    "Light sensitivity",
+    "Sound sensitivity",
+    "Neck pain",
+    "Dizziness",
+    "Runny nose",
+    "Insomnia",
+    "Low mood",
+    "Anxiety",
+    "Sensitivity to smells",
+    "Feeling hot",
+    "Ringing in ears",
+    "Fatigue",
+    "Blurred vision",
+    "Mood swings"
+  ],
+  "fr": [
+    "Douleur aiguë intense",
+    "Douleur pulsatile",
+    "Douleur pulsatile intermittente",
+    "Aggravée par le mouvement",
+    "Nausée",
+    "Vomissements",
+    "Sensibilité à la lumière",
+    "Sensibilité au bruit",
+    "Douleur cervicale",
+    "Vertiges",
+    "Écoulement nasal",
+    "Insomnie",
+    "Humeur dépressive",
+    "Anxiété",
+    "Sensibilité aux odeurs",
+    "Sensation de chaleur",
+    "Acouphènes",
+    "Fatigue",
+    "Vision floue",
+    "Sautes d’humeur"
+  ],
+  "de": [
+    "Starker stechender Schmerz",
+    "Pulsierender Schmerz",
+    "Zeitweise pulsierender Schmerz",
+    "Schlimmer bei Bewegung",
+    "Übelkeit",
+    "Erbrechen",
+    "Lichtempfindlichkeit",
+    "Geräuschempfindlichkeit",
+    "Nackenschmerzen",
+    "Schwindel",
+    "Laufende Nase",
+    "Schlaflosigkeit",
+    "Gedrückte Stimmung",
+    "Angst",
+    "Geruchsempfindlichkeit",
+    "Hitzegefühl",
+    "Ohrgeräusche",
+    "Müdigkeit",
+    "Verschwommenes Sehen",
+    "Stimmungsschwankungen"
+  ],
+  "it": [
+    "Dolore lancinante intenso",
+    "Dolore pulsante",
+    "Dolore pulsante intermittente",
+    "Peggiora con il movimento",
+    "Nausea",
+    "Vomito",
+    "Sensibilità alla luce",
+    "Sensibilità ai suoni",
+    "Dolore al collo",
+    "Vertigini",
+    "Naso che cola",
+    "Insonnia",
+    "Umore depresso",
+    "Ansia",
+    "Sensibilità agli odori",
+    "Sensazione di calore",
+    "Acufeni",
+    "Stanchezza",
+    "Vista offuscata",
+    "Sbalzi d’umore"
+  ],
+  "lu": [
+    "Staark stiechende Péng",
+    "Pulséierende Péng",
+    "Zäitweis pulséierend Péng",
+    "Méi schlëmm bei Beweegung",
+    "Iwwelzegkeet",
+    "Erbriechen",
+    "Liichtempfindlechkeet",
+    "Kaméidiempfindlechkeet",
+    "Halswéi",
+    "Schwindel",
+    "Lafend Nues",
+    "Schloflosegkeet",
+    "Gedréckte Stëmmung",
+    "Angscht",
+    "Gerochsempfindlechkeet",
+    "Hëtztgefill",
+    "Ouergeräischer",
+    "Middegkeet",
+    "Onschaarf Siicht",
+    "Stëmmungsschwankungen"
+  ]
+};
 class MigraineDiaryCard extends HTMLElement {
   setConfig(config) {
     this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", action_button_color:"", action_icon_color:"", medication_button_color:"", medication_icon_color:"", ...config};
@@ -528,7 +640,7 @@ class MigraineDiaryCard extends HTMLElement {
     const symptoms=document.createElement("div");symptoms.className="symptom-grid";card.append(symptoms);
     for(let i=0;i<SYMPTOMS.length;i++){
       const enabled=this._symptoms.has(SYMPTOMS[i]);
-      const btn=this._tile(SYMPTOMS[i],"mdi:head-flash",this._config.symptom_display,async()=>{
+      const btn=this._tile((SYMPTOM_TRANSLATIONS[this._language()]||SYMPTOMS)[i],"mdi:head-flash",this._config.symptom_display,async()=>{
         btn.disabled=true;
         try{await this._toggleSymptom(i+1);}
         catch(error){this._message=this._t("error")+": "+(error?.message || String(error));this._render();}
