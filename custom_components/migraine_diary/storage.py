@@ -186,7 +186,7 @@ class DiaryStore:
                 return active["id"]
             return await asyncio.to_thread(self._run, op)
 
-    async def create_past_episode(self, profile_id: str, started_at: str, ended_at: str) -> str:
+    async def create_past_episode(self, profile_id: str, started_at: str, ended_at: str, *, pain: dict | None = None) -> str:
         """Atomically add an already completed episode without changing active state."""
         start = _iso(started_at)
         end = _iso(ended_at)
@@ -194,6 +194,16 @@ class DiaryStore:
             raise ValueError("End must be after start")
         if end > utc_now():
             raise ValueError("Past episode cannot end in the future")
+        if pain is not None:
+            intensity = pain.get("intensity")
+            zones = pain.get("zones")
+            symptoms = pain.get("symptoms", [])
+            if type(intensity) is not int or not 1 <= intensity <= 9:
+                raise ValueError("Pain intensity must be an integer from 1 to 9")
+            if not isinstance(zones, list) or any(type(z) is not int or not 1 <= z <= 19 for z in zones):
+                raise ValueError("Pain zones must be a list of zone numbers 1–19")
+            if not isinstance(symptoms, list) or any(type(v) not in (str, int) for v in symptoms):
+                raise ValueError("Symptoms must be a list")
         episode_id = str(uuid4())
         async with self._lock:
             def op(conn):
@@ -218,6 +228,11 @@ class DiaryStore:
                     "VALUES(?,?,?,?,?)",
                     (episode_id, profile_id, start, end, "unspecified"),
                 )
+                if pain is not None:
+                    conn.execute(
+                        "INSERT INTO events(id,profile_id,episode_id,event_type,occurred_at,recorded_at,payload_json) VALUES(?,?,?,?,?,?,?)",
+                        (str(uuid4()), profile_id, episode_id, "pain", start, utc_now(), json.dumps(pain, ensure_ascii=False)),
+                    )
             await asyncio.to_thread(self._run, op)
         return episode_id
 
