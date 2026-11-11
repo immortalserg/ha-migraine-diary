@@ -191,6 +191,31 @@ class MigraineDiaryCard extends HTMLElement {
     }catch(error){this._message=this._t("error")+": "+(error?.message||String(error));}
     finally{this._busy=false;this._render();}
   }
+  _openPastDialog(){
+    const dialog=document.createElement("dialog");
+    dialog.style.cssText="border:1px solid var(--divider-color);border-radius:12px;padding:20px;background:var(--card-background-color);color:var(--primary-text-color);max-width:90vw";
+    const title=document.createElement("h3");title.textContent="Записать прошлый приступ";dialog.append(title);
+    const inputs=[];
+    for(const labelText of ["Начало","Конец"]){
+      const label=document.createElement("label");label.style.cssText="display:block;margin:12px 0";label.textContent=labelText+" ";
+      const input=document.createElement("input");input.type="datetime-local";input.required=true;input.style.cssText="display:block;margin-top:5px;padding:8px;max-width:100%";
+      label.append(input);dialog.append(label);inputs.push(input);
+    }
+    const error=document.createElement("p");error.style.color="var(--error-color)";dialog.append(error);
+    const cancel=this._button("Отмена",()=>dialog.close());
+    const save=this._button("Сохранить",async()=>{
+      const [start,end]=inputs.map(i=>i.value?new Date(i.value).toISOString():null);
+      if(!start||!end){error.textContent="Укажите начало и конец";return;}
+      if(new Date(start)>=new Date(end)){error.textContent="Конец должен быть позже начала";return;}
+      if(new Date(end)>new Date()){error.textContent="Конец не может быть в будущем";return;}
+      save.disabled=true;
+      try{await this._hass.callService("migraine_diary","record_past_episode",{profile_id:this._config.profile_id,started_at:start,ended_at:end});dialog.close();}
+      catch(e){error.textContent=e?.message||String(e);save.disabled=false;}
+    });
+    const buttons=document.createElement("div");buttons.style.cssText="display:flex;gap:8px;justify-content:flex-end";buttons.append(cancel,save);dialog.append(buttons);
+    dialog.addEventListener("close",()=>dialog.remove());
+    this.shadowRoot.append(dialog);dialog.showModal();
+  }
   _render(){
     if(!this.shadowRoot || !this._config)return;
     const root=this.shadowRoot;root.replaceChildren();
@@ -242,6 +267,8 @@ class MigraineDiaryCard extends HTMLElement {
       zones:[...this._zones].sort((a,b)=>a-b),
       symptoms:[...this._symptoms]
     }),!active,"action-btn"));
+    const pastButton=this._button("Прошлый приступ",()=>this._openPastDialog());
+    pastButton.style.marginTop="8px";
     const zonesHeading=document.createElement("h3");zonesHeading.textContent=this._t("zones");if(this._showLabel("zones"))card.append(zonesHeading);
     if(this._svgLoaded){
       const holder=document.createElement("div");holder.className="map";
@@ -312,7 +339,7 @@ class MigraineDiaryCard extends HTMLElement {
     const mapNode=Array.from(card.children).find(el=>el.classList?.contains("map"));
     const fallbackNode=!mapNode?Array.from(card.children).find(el=>el.classList?.contains("row")&&el!==levels):null;
     const sectionContents={
-      actions:[actions],zones:[zonesHeading,mapNode||fallbackNode],
+      actions:[actions,pastButton],zones:[zonesHeading,mapNode||fallbackNode],
       intensity:[intensity,levels],symptoms:[symptomHeading,symptoms],
       medications:[medications,pills]
     };
