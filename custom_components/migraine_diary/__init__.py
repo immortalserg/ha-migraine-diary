@@ -29,7 +29,7 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
     await hass.http.async_register_static_paths([
         StaticPathConfig(FRONTEND_URL, str(asset_dir), cache_headers=False)
     ])
-    frontend.async_register_extra_module_url(
+    frontend.add_extra_js_url(
         hass, f"{FRONTEND_URL}/migraine-diary-card.js"
     )
     hass.data[DOMAIN]["frontend_registered"] = True
