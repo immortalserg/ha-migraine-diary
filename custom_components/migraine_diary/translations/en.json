@@ -91,5 +91,16 @@
         "name": "Last record"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Language",
+        "description": "Choose the language for diary records. Automatic uses the Home Assistant language.",
+        "data": {
+          "language": "Language"
+        }
+      }
+    }
   }
 }
