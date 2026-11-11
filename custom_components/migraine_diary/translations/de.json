@@ -102,5 +102,157 @@
         }
       }
     }
+  },
+  "services": {
+    "start_episode": {
+      "name": "Anfall beginnen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "started_at": {
+          "name": "Beginn"
+        },
+        "headache_type": {
+          "name": "Kopfschmerztyp"
+        },
+        "notes": {
+          "name": "Notizen"
+        }
+      }
+    },
+    "end_episode": {
+      "name": "Anfall beenden",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "episode_id": {
+          "name": "Anfalls-ID"
+        },
+        "ended_at": {
+          "name": "Ende"
+        }
+      }
+    },
+    "record_past_episode": {
+      "name": "Vergangenen Anfall erfassen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "started_at": {
+          "name": "Beginn"
+        },
+        "ended_at": {
+          "name": "Ende"
+        }
+      }
+    },
+    "correct_active_start": {
+      "name": "Anfallsbeginn korrigieren",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "started_at": {
+          "name": "Beginn"
+        }
+      }
+    },
+    "record_premonition": {
+      "name": "Vorboten erfassen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "symptoms": {
+          "name": "Symptome"
+        },
+        "occurred_at": {
+          "name": "Ereigniszeit"
+        }
+      }
+    },
+    "record_medication": {
+      "name": "Medikament erfassen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "name": {
+          "name": "Medikament"
+        },
+        "dose": {
+          "name": "Dosis"
+        },
+        "unit": {
+          "name": "Einheit"
+        },
+        "episode_id": {
+          "name": "Anfalls-ID"
+        },
+        "occurred_at": {
+          "name": "Ereigniszeit"
+        }
+      }
+    },
+    "record_pain": {
+      "name": "Schmerz erfassen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "intensity": {
+          "name": "Intensität"
+        },
+        "zones": {
+          "name": "Schmerzzonen"
+        },
+        "symptoms": {
+          "name": "Symptome"
+        },
+        "episode_id": {
+          "name": "Anfalls-ID"
+        },
+        "occurred_at": {
+          "name": "Ereigniszeit"
+        }
+      }
+    },
+    "list_history": {
+      "name": "Verlauf anzeigen",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "limit": {
+          "name": "Limit"
+        },
+        "start": {
+          "name": "Von"
+        },
+        "end": {
+          "name": "Bis"
+        }
+      }
+    },
+    "export_csv": {
+      "name": "CSV exportieren",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "limit": {
+          "name": "Limit"
+        },
+        "start": {
+          "name": "Von"
+        },
+        "end": {
+          "name": "Bis"
+        }
+      }
+    }
   }
 }
