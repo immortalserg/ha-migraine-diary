@@ -72,6 +72,13 @@ class DiaryStore:
         started_at = _iso(started_at)
         async with self._lock:
             def op(conn):
+                conflict = conn.execute(
+                    """SELECT id FROM episodes WHERE profile_id=?
+                       AND started_at<=? AND (ended_at IS NULL OR ended_at>?)
+                       LIMIT 1""", (profile_id, started_at, started_at)
+                ).fetchone()
+                if conflict:
+                    raise ValueError("Начало пересекается с существующим приступом")
                 conn.execute(
                     "INSERT INTO episodes(id,profile_id,started_at,headache_type,notes) VALUES(?,?,?,?,?)",
                     (episode_id, profile_id, started_at, headache_type, notes),
@@ -97,6 +104,13 @@ class DiaryStore:
                 ).fetchone()
                 if existing is not None:
                     return existing["id"], False
+                conflict = conn.execute(
+                    """SELECT id FROM episodes WHERE profile_id=?
+                       AND started_at<=? AND (ended_at IS NULL OR ended_at>?)
+                       LIMIT 1""", (profile_id, started_at, started_at)
+                ).fetchone()
+                if conflict:
+                    raise ValueError("Начало пересекается с существующим приступом")
                 try:
                     conn.execute(
                         "INSERT INTO episodes(id,profile_id,started_at,headache_type,notes) VALUES(?,?,?,?,?)",
@@ -118,6 +132,17 @@ class DiaryStore:
         ended_at = _iso(ended_at)
         async with self._lock:
             def op(conn):
+                current = conn.execute("SELECT profile_id,started_at FROM episodes WHERE id=? AND ended_at IS NULL",(episode_id,)).fetchone()
+                if current is None or ended_at < current["started_at"]:
+                    raise ValueError("Приступ не найден или окончание раньше начала")
+                conflict = conn.execute(
+                    """SELECT id FROM episodes WHERE profile_id=? AND id<>?
+                       AND started_at<? AND (ended_at IS NULL OR ended_at>?)
+                       LIMIT 1""",
+                    (current["profile_id"], episode_id, ended_at, current["started_at"]),
+                ).fetchone()
+                if conflict:
+                    raise ValueError("Окончание пересекается с другим приступом")
                 cursor = conn.execute(
                     "UPDATE episodes SET ended_at=? WHERE id=? AND ended_at IS NULL AND started_at<=?",
                     (ended_at, episode_id, ended_at),
