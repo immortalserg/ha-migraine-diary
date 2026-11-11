@@ -6,5 +6,90 @@
         "description": "Riicht Äert Migränendagbuch an"
       }
     }
+  },
+  "entity": {
+    "switch": {
+      "zone": {
+        "name": "Schmäerzzon {number}"
+      },
+      "symptom_1": {
+        "name": "Staark stiechende Péng"
+      },
+      "symptom_2": {
+        "name": "Pulséierende Péng"
+      },
+      "symptom_3": {
+        "name": "Zäitweis pulséierend Péng"
+      },
+      "symptom_4": {
+        "name": "Méi schlëmm bei Beweegung"
+      },
+      "symptom_5": {
+        "name": "Iwwelzegkeet"
+      },
+      "symptom_6": {
+        "name": "Erbriechen"
+      },
+      "symptom_7": {
+        "name": "Liichtempfindlechkeet"
+      },
+      "symptom_8": {
+        "name": "Kaméidiempfindlechkeet"
+      },
+      "symptom_9": {
+        "name": "Halswéi"
+      },
+      "symptom_10": {
+        "name": "Schwindel"
+      },
+      "symptom_11": {
+        "name": "Lafend Nues"
+      },
+      "symptom_12": {
+        "name": "Schloflosegkeet"
+      },
+      "symptom_13": {
+        "name": "Gedréckte Stëmmung"
+      },
+      "symptom_14": {
+        "name": "Angscht"
+      },
+      "symptom_15": {
+        "name": "Gerochsempfindlechkeet"
+      },
+      "symptom_16": {
+        "name": "Hëtztgefill"
+      },
+      "symptom_17": {
+        "name": "Ouergeräischer"
+      },
+      "symptom_18": {
+        "name": "Middegkeet"
+      },
+      "symptom_19": {
+        "name": "Onschaarf Siicht"
+      },
+      "symptom_20": {
+        "name": "Stëmmungsschwankungen"
+      }
+    },
+    "number": {
+      "migraine_level": {
+        "name": "Schmäerzintensitéit"
+      }
+    },
+    "binary_sensor": {
+      "migraine_active": {
+        "name": "Migränenu fall"
+      }
+    },
+    "sensor": {
+      "active_episode": {
+        "name": "Aktiven Ufall"
+      },
+      "last_record": {
+        "name": "Leschten Andrag"
+      }
+    }
   }
 }
