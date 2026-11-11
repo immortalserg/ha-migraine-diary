@@ -91,5 +91,16 @@
         "name": "Leschten Andrag"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sprooch",
+        "description": "Wielt d'Sprooch vun den Andreeg. Automatesch benotzt d'Sprooch vun Home Assistant.",
+        "data": {
+          "language": "Sprooch"
+        }
+      }
+    }
   }
 }
