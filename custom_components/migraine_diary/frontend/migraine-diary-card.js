@@ -752,6 +752,14 @@ class MigraineDiaryCardEditor extends HTMLElement {
       wrapper.append(input);root.append(wrapper);
     };
     field("Профиль","profile_id");
+    field("Язык карточки","language","text",[
+      ["auto","Автоматически (Home Assistant)"],
+      ["ru","Русский"],
+      ["en","English"],
+      ["fr","Français"],
+      ["de","Deutsch"],
+      ["lu","Lëtzebuergesch"]
+    ]);
     const entityWrapper=document.createElement("label");entityWrapper.textContent="Сущность активного приступа";
     const entitySelect=document.createElement("select");
     const selectedEntity=this._config.active_entity || "binary_sensor.migren";
