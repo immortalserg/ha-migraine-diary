@@ -28,7 +28,7 @@ def _notify_record_saved(hass: HomeAssistant, event: dict) -> None:
     else:
         _LOGGER.warning("Last-record sensor not registered for saved event %s", event["event_id"])
 
-SERVICE_NAMES = ("start_episode", "end_episode", "record_premonition", "record_medication", "record_pain", "list_history", "export_csv")
+SERVICE_NAMES = ("start_episode", "end_episode", "record_past_episode", "record_premonition", "record_medication", "record_pain", "list_history", "export_csv")
 
 PROFILE = vol.Required("profile_id")
 TIMESTAMP = vol.Optional("occurred_at")
@@ -37,6 +37,7 @@ EPISODE = vol.Optional("episode_id")
 SCHEMAS = {
     "export_csv": vol.Schema({PROFILE: cv.string, vol.Optional("limit", default=1000): vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)), vol.Optional("start"): cv.string, vol.Optional("end"): cv.string}),
     "list_history": vol.Schema({PROFILE: cv.string, vol.Optional("limit", default=200): vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)), vol.Optional("start"): cv.string, vol.Optional("end"): cv.string}),
+    "record_past_episode": vol.Schema({PROFILE: cv.string, vol.Required("started_at"): cv.string, vol.Required("ended_at"): cv.string}),
     "start_episode": vol.Schema({PROFILE: cv.string, vol.Optional("started_at"): cv.string,
                                   vol.Optional("headache_type", default="unspecified"): cv.string,
                                   vol.Optional("notes"): cv.string}),
@@ -92,6 +93,9 @@ def register_services(hass: HomeAssistant, store: DiaryStore) -> None:
                 writer.writeheader()
                 writer.writerows(records)
                 return {"filename": "migraine-diary.csv", "csv": buffer.getvalue(), "count": len(records)}
+            if name == "record_past_episode":
+                episode_id = await store.create_past_episode(profile_id, data["started_at"], data["ended_at"])
+                return {"episode_id": episode_id}
             if name == "start_episode":
                 episode_id, created = await store.ensure_active_episode(
                     profile_id, started_at=data.get("started_at"),
