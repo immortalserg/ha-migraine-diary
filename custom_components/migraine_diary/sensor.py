@@ -69,6 +69,87 @@ class MigraineEpisodeSensor(SensorEntity):
                 "headache_type": active["headache_type"],
             }
 
+LAST_RECORD_TEXT = {
+  "ru": [
+    "Нет новых записей",
+    "Началась мигрень",
+    "Закончилась мигрень",
+    "Изменилось состояние",
+    "Приём лекарства",
+    "Предчувствие",
+    "уровень",
+    "зоны",
+    "симптомы",
+    "нет",
+    "не указано"
+  ],
+  "en": [
+    "No recent records",
+    "Migraine started",
+    "Migraine ended",
+    "State updated",
+    "Medication taken",
+    "Premonition",
+    "level",
+    "zones",
+    "symptoms",
+    "none",
+    "not specified"
+  ],
+  "fr": [
+    "Aucune nouvelle entrée",
+    "Début de la migraine",
+    "Fin de la migraine",
+    "État mis à jour",
+    "Prise de médicament",
+    "Signes précurseurs",
+    "intensité",
+    "zones",
+    "symptômes",
+    "aucun",
+    "non précisé"
+  ],
+  "de": [
+    "Keine neuen Einträge",
+    "Migräne begonnen",
+    "Migräne beendet",
+    "Zustand aktualisiert",
+    "Medikament eingenommen",
+    "Vorboten",
+    "Stärke",
+    "Zonen",
+    "Symptome",
+    "keine",
+    "nicht angegeben"
+  ],
+  "it": [
+    "Nessuna nuova registrazione",
+    "Emicrania iniziata",
+    "Emicrania terminata",
+    "Stato aggiornato",
+    "Farmaco assunto",
+    "Sintomi premonitori",
+    "intensità",
+    "zone",
+    "sintomi",
+    "nessuno",
+    "non specificato"
+  ],
+  "lu": [
+    "Keng nei Andrag",
+    "Migrän huet ugefaangen",
+    "Migrän ass eriwwer",
+    "Zoustand aktualiséiert",
+    "Medikament geholl",
+    "Virzeechen",
+    "Intensitéit",
+    "Zonen",
+    "Symptomer",
+    "keng",
+    "net uginn"
+  ]
+}
+
 class MigraineLastRecordSensor(SensorEntity):
     """Show the latest successfully committed event, without reading SQLite."""
 
@@ -91,56 +172,53 @@ class MigraineLastRecordSensor(SensorEntity):
         self._entry_id = entry_id
         self._attr_unique_id = f"{entry_id}_last_record"
         self.entity_id = "sensor.migraine_diary_last_record"
-        self._attr_native_value = "Нет новых записей"
+        self._attr_native_value = "No recent records"
+        self._last_event = None
         self._attr_extra_state_attributes = {}
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         self.hass.data[DOMAIN]["last_record_sensor"] = self
+        self._publish_event()
         self.async_on_remove(self._unregister)
 
     def _unregister(self) -> None:
         if self.hass.data.get(DOMAIN, {}).get("last_record_sensor") is self:
             self.hass.data[DOMAIN].pop("last_record_sensor", None)
 
-    def update_from_saved_event(self, event: dict) -> None:
-        """Publish the exact data passed after a successful database operation."""
+    def _language(self) -> str:
+        language = (self.hass.config.language or "en").split("-")[0].lower()
+        return "lu" if language == "lb" else language if language in LAST_RECORD_TEXT else "en"
+
+    def _publish_event(self) -> None:
+        event = self._last_event
+        lang = self._language()
+        words = LAST_RECORD_TEXT[lang]
+        if event is None:
+            self._attr_native_value = words[0]
+            self._attr_extra_state_attributes = {}
+            self.async_write_ha_state()
+            return
         kind = event["event_type"]
         payload = event.get("payload", {})
-        labels = {
-            "start": "Началась мигрень",
-            "end": "Закончилась мигрень",
-            "state_update": "Изменилось состояние",
-            "pain": "Изменилось состояние",
-            "medication": "Приём лекарства",
-            "premonition": "Предчувствие",
-        }
+        labels = {"start": words[1], "end": words[2], "state_update": words[3],
+                  "pain": words[3], "medication": words[4], "premonition": words[5]}
         label = labels.get(kind, kind)
-        attrs = {
-            "дата_и_время_записи": event["saved_at"],
-            "событие": label,
-        }
-        if kind in ("start", "state_update", "pain"):
-            attrs["уровень"] = payload.get("intensity")
-            attrs["зоны"] = payload.get("zones", [])
-            symptoms = payload.get("symptoms", [])
-            # The card sends symptom names; normalize them to 1–20 for display.
-            if symptoms and isinstance(symptoms[0], str):
-                attrs["симптомы"] = [
-                    SYMPTOM_NAMES.index(s) + 1 for s in symptoms
-                    if s in SYMPTOM_NAMES
-                ]
-            else:
-                attrs["симптомы"] = symptoms
-        elif kind == "medication":
-            attrs["лекарство"] = payload.get("name")
+        attrs = {"recorded_at": event["saved_at"], "event_type": kind, "event_label": label}
         parts = [label]
         if kind in ("start", "state_update", "pain"):
-            parts.append(f"уровень: {attrs['уровень']}")
-            parts.append("зоны: " + (", ".join(map(str, attrs["зоны"])) or "нет"))
-            parts.append("симптомы: " + (", ".join(map(str, attrs["симптомы"])) or "нет"))
+            level = payload.get("intensity")
+            zones = payload.get("zones", [])
+            symptoms = payload.get("symptoms", [])
+            if symptoms and isinstance(symptoms[0], str):
+                symptoms = [SYMPTOM_NAMES.index(s) + 1 for s in symptoms if s in SYMPTOM_NAMES]
+            attrs.update({"intensity": level, "zones": zones, "symptoms": symptoms})
+            parts.extend([f"{words[6]}: {level}",
+                          f"{words[7]}: {', '.join(map(str, zones)) or words[9]}",
+                          f"{words[8]}: {', '.join(map(str, symptoms)) or words[9]}"])
         elif kind == "medication":
-            medicine = attrs.get("лекарство") or "не указано"
+            medicine = payload.get("name") or words[10]
+            attrs["medication"] = payload.get("name")
             dose = payload.get("dose")
             unit = payload.get("unit", "")
             if dose is not None:
@@ -148,9 +226,11 @@ class MigraineLastRecordSensor(SensorEntity):
                 if unit:
                     medicine += f" {unit}"
             parts.append(medicine)
-
-        # HA recorder limits entity state strings to 255 characters.
-        state = " — ".join(parts)
-        self._attr_native_value = state[:255]
+        self._attr_native_value = " — ".join(parts)[:255]
         self._attr_extra_state_attributes = attrs
         self.async_write_ha_state()
+
+    def update_from_saved_event(self, event: dict) -> None:
+        """Keep language-neutral event data and render a localized summary."""
+        self._last_event = dict(event)
+        self._publish_event()
