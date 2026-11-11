@@ -162,7 +162,7 @@ const EXTRA_WORDS={
     "loadError": "Zäitraim konnten net geluede ginn: "
   }
 };
-const SECTION_IDS=["actions","zones","intensity","symptoms","medications"];
+const SECTION_IDS=["actions","zones","intensity","symptoms","medications","food"];
 const DEFAULT_SECTION_ORDER=[...SECTION_IDS];
 const DEFAULT_LABELS={title:true,zones:true,intensity:true,symptoms:true,medications:true};
 const SYMPTOMS=["Сильная ударная боль","Пульсирующая боль","Пульсирующая периодическая боль","Усиливается при движении","Тошнота","Рвота","Светочувствительность","Чувствительность к шуму","Боль в шее","Головокружение","Насморк","Бессонница","Подавленное настроение","Тревожность","Чувствительность к запахам","Жар / ощущение жара","Звон в ушах","Усталость","Расплывчатое зрение","Перепады настроения"];
@@ -287,6 +287,7 @@ class MigraineDiaryCard extends HTMLElement {
       this._config[key]=value;
     }
     if (!Array.isArray(this._config.medications)) throw new Error("medications must be an array");
+    if(Array.isArray(this._config.section_order) && this._config.section_order.length===SECTION_IDS.length-1 && !this._config.section_order.includes("food"))this._config.section_order=[...this._config.section_order,"food"];
     if(!Array.isArray(this._config.section_order) || this._config.section_order.length!==SECTION_IDS.length || new Set(this._config.section_order).size!==SECTION_IDS.length || this._config.section_order.some(id=>!SECTION_IDS.includes(id)))throw Error("section_order must contain actions, zones, intensity, symptoms, medications exactly once");
     if(typeof this._config.show_labels==="object" && (this._config.show_labels===null || Array.isArray(this._config.show_labels)))throw Error("show_labels must be a boolean or an object");
     for(const key of ["action_columns","symptom_columns","medication_columns"]){const n=Number(this._config[key]);if(!Number.isInteger(n)||n<1||n>12)throw Error(key+" must be an integer from 1 to 12");this._config[key]=n;}
@@ -687,7 +688,7 @@ class MigraineDiaryCard extends HTMLElement {
     const sectionContents={
       actions:[actions],zones:[zonesHeading,mapNode||fallbackNode],
       intensity:[intensity,levels],symptoms:[symptomHeading,symptoms],
-      medications:[medications,pills]
+      medications:[medications,pills],food:[foodHeading,foodForm]
     };
     for(const key of this._config.section_order){
       const section=document.createElement("section");section.className="section";
@@ -702,11 +703,77 @@ class MigraineDiaryCard extends HTMLElement {
       }
       card.append(section);
     }
+    const foodHeading=document.createElement("h3");foodHeading.textContent=this._language()==="ru"?"Питание":this._language()==="fr"?"Alimentation":this._language()==="de"?"Ernährung":"Food";
+    const foodForm=document.createElement("form");foodForm.style.cssText="display:grid;gap:8px";
+    const foodName=document.createElement("input");foodName.required=true;foodName.maxLength=200;foodName.placeholder=this._language()==="ru"?"Продукт или блюдо":"Food or meal";
+    const foodQuantity=document.createElement("input");foodQuantity.maxLength=100;foodQuantity.placeholder=this._language()==="ru"?"Количество (необязательно)":"Quantity (optional)";
+    const foodNotes=document.createElement("input");foodNotes.maxLength=500;foodNotes.placeholder=this._language()==="ru"?"Примечание (необязательно)":"Notes (optional)";
+    const foodSubmit=document.createElement("button");foodSubmit.type="submit";foodSubmit.textContent=this._language()==="ru"?"Записать приём пищи":"Save food";
+    foodForm.append(foodName,foodQuantity,foodNotes,foodSubmit);
+    foodForm.addEventListener("submit",async event=>{
+      event.preventDefault();
+      const name=foodName.value.trim();if(!name||this._busy)return;
+      const payload={name};
+      if(foodQuantity.value.trim())payload.quantity=foodQuantity.value.trim();
+      if(foodNotes.value.trim())payload.notes=foodNotes.value.trim();
+      await this._call("record_food",payload);
+    });
     const exportButton=this._button(this._t("export"),()=>this._exportCsv());
     exportButton.style.marginTop="14px";card.append(exportButton);
     if(this._message){const msg=document.createElement("div");msg.className="message";msg.textContent=this._message;card.append(msg);}
   }
 }
+
+class MigraineDiaryCardEditor extends HTMLElement {
+  constructor(){super();this.attachShadow({mode:"open"});}
+  set hass(value){this._hass=value;}
+  setConfig(config){this._config={...config};this.render();}
+  _change(key,value){
+    this._config={...this._config,[key]:value};
+    this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this._config},bubbles:true,composed:true}));
+  }
+  render(){
+    if(!this._config)return;
+    const root=this.shadowRoot;root.replaceChildren();
+    const style=document.createElement("style");style.textContent=":host{display:block}label{display:grid;gap:4px;margin:10px 0}input,select{box-sizing:border-box;width:100%;padding:8px;border:1px solid var(--divider-color);border-radius:6px;background:var(--card-background-color);color:var(--primary-text-color)}h3{margin:16px 0 8px}";
+    root.append(style);
+    const title=document.createElement("h3");title.textContent="Migraine Diary — настройки карточки";root.append(title);
+    const field=(label,key,type="text",options=null)=>{
+      const wrapper=document.createElement("label");wrapper.textContent=label;
+      const input=options?document.createElement("select"):document.createElement("input");
+      if(options){for(const [value,name] of options){const option=document.createElement("option");option.value=value;option.textContent=name;input.append(option);}}
+      else input.type=type;
+      if(type==="checkbox"){input.checked=this._config[key]??true;}
+      else input.value=this._config[key]??"";
+      input.addEventListener("change",()=>this._change(key,type==="checkbox"?input.checked:type==="number"?Number(input.value):input.value));
+      wrapper.append(input);root.append(wrapper);
+    };
+    field("Профиль","profile_id");
+    field("Сущность активного приступа","active_entity");
+    field("Использовать помощники Home Assistant","use_ha_helpers","checkbox");
+    field("Показывать заголовки","show_labels","checkbox");
+    field("Отступы между блоками (px)","section_gap","number");
+    for(const [key,label] of [["action_columns","Колонки действий"],["symptom_columns","Колонки симптомов"],["medication_columns","Колонки лекарств"]])field(label,key,"number");
+    for(const [key,label] of [["action_display","Кнопки действий"],["symptom_display","Кнопки симптомов"],["medication_display","Кнопки лекарств"]])field(label,key,"text",[["both","Иконка и текст"],["icon","Только иконка"],["label","Только текст"]]);
+    const order=document.createElement("h3");order.textContent="Порядок блоков";root.append(order);
+    const names={actions:"Действия",zones:"Зоны боли",intensity:"Интенсивность",symptoms:"Симптомы",medications:"Лекарства",food:"Питание"};
+    const ordered=Array.isArray(this._config.section_order)?[...this._config.section_order]:[...SECTION_IDS];
+    for(const id of SECTION_IDS)if(!ordered.includes(id))ordered.push(id);
+    for(const [index,id] of ordered.entries()){
+      const line=document.createElement("div");line.style.cssText="display:flex;align-items:center;gap:8px;margin:5px 0";
+      const name=document.createElement("span");name.style.flex="1";name.textContent=names[id];
+      const up=document.createElement("button");up.textContent="↑";up.disabled=index===0;
+      const down=document.createElement("button");down.textContent="↓";down.disabled=index===ordered.length-1;
+      const move=delta=>{const next=[...ordered];[next[index],next[index+delta]]=[next[index+delta],next[index]];this._change("section_order",next);this.render();};
+      up.addEventListener("click",()=>move(-1));down.addEventListener("click",()=>move(1));
+      line.append(name,up,down);root.append(line);
+    }
+  }
+}
+if(!customElements.get("migraine-diary-card-editor"))customElements.define("migraine-diary-card-editor",MigraineDiaryCardEditor);
+MigraineDiaryCard.getConfigElement=()=>document.createElement("migraine-diary-card-editor");
+MigraineDiaryCard.getStubConfig=()=>({type:"custom:migraine-diary-card",profile_id:"patient"});
+
 if(!customElements.get("migraine-diary-card"))customElements.define("migraine-diary-card",MigraineDiaryCard);
 window.customCards=window.customCards||[];
 if(!window.customCards.some(c=>c.type==="migraine-diary-card"))window.customCards.push({type:"migraine-diary-card",name:"Migraine Diary",description:"Headache diary with interactive pain map"});

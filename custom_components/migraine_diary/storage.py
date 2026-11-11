@@ -373,7 +373,10 @@ class DiaryStore:
                     "level": payload.get("intensity"),
                     "zones": ", ".join(map(str, payload.get("zones", []))),
                     "symptoms": ", ".join(map(str, normalized)),
-                    "medication": payload.get("name", ""),
+                    "medication": payload.get("name", "") if item["event"] == "medication" else "",
+                    "food": payload.get("name", "") if item["event"] == "food" else "",
+                    "quantity": payload.get("quantity", ""),
+                    "notes": payload.get("notes", ""),
                     "dose": payload.get("dose"),
                     "unit": payload.get("unit", ""),
                 })

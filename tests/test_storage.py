@@ -62,6 +62,19 @@ class DiaryStoreTests(unittest.IsolatedAsyncioTestCase):
             )
         self.assertEqual(await self.store.list_episodes("patient"), [])
 
+    async def test_food_event_without_episode(self):
+        event_id = await self.store.record_event(
+            "patient", "food",
+            {"name": "Yogurt", "quantity": "150 g", "notes": "Breakfast"},
+            occurred_at="2026-11-09T08:00:00+01:00",
+        )
+        with sqlite3.connect(self.db) as conn:
+            row = conn.execute("SELECT episode_id, payload_json FROM events WHERE id=?", (event_id,)).fetchone()
+        self.assertIsNone(row[0])
+        self.assertEqual(json.loads(row[1])["name"], "Yogurt")
+        history = await self.store.list_history("patient")
+        self.assertTrue(any(row["event"] == "food" and row["food"] == "Yogurt" and row["quantity"] == "150 g" for row in history))
+
     async def test_prevent_duplicate_active_episode(self):
         await self.store.start_episode("patient")
         with self.assertRaises(ValueError):
