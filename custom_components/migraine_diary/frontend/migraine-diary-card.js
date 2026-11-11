@@ -280,7 +280,7 @@ const SYMPTOM_TRANSLATIONS={
 };
 class MigraineDiaryCard extends HTMLElement {
   setConfig(config) {
-    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/migraine_diary/frontend/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", action_button_color:"", action_icon_color:"", medication_button_color:"", medication_icon_color:"", ...config};
+    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/migraine_diary/frontend/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", action_button_color:"", action_icon_color:"", medication_button_color:"", medication_icon_color:"", show_food:true, ...config};
     for(const key of ["button_font_size","button_icon_size","action_font_size","action_icon_size"]){
       const value=Number(this._config[key]);
       if(!Number.isFinite(value)||value<6||value>64)throw new Error(key+" must be 6–64 pixels");
@@ -707,6 +707,7 @@ class MigraineDiaryCard extends HTMLElement {
     };
     for(const key of this._config.section_order){
       const section=document.createElement("section");section.className="section";
+      if(key==="food" && this._config.show_food===false)continue;
       for(const node of sectionContents[key]){
         if(!node)continue;
         if(node===zonesHeading&&!this._showLabel("zones"))continue;
@@ -726,7 +727,7 @@ class MigraineDiaryCard extends HTMLElement {
 
 class MigraineDiaryCardEditor extends HTMLElement {
   constructor(){super();this.attachShadow({mode:"open"});}
-  set hass(value){this._hass=value;}
+  set hass(value){this._hass=value;this.render();}
   setConfig(config){this._config={...config};this.render();}
   _change(key,value){
     this._config={...this._config,[key]:value};
@@ -749,9 +750,24 @@ class MigraineDiaryCardEditor extends HTMLElement {
       wrapper.append(input);root.append(wrapper);
     };
     field("Профиль","profile_id");
-    field("Сущность активного приступа","active_entity");
+    const entityWrapper=document.createElement("label");entityWrapper.textContent="Сущность активного приступа";
+    const entitySelect=document.createElement("select");
+    const selectedEntity=this._config.active_entity || "binary_sensor.migren";
+    const entityIds=Object.keys(this._hass?.states||{}).filter(id=>id.startsWith("binary_sensor.")||id.startsWith("sensor.")).sort((a,b)=>a.localeCompare(b));
+    if(!entityIds.includes(selectedEntity))entityIds.unshift(selectedEntity);
+    for(const id of entityIds){
+      const option=document.createElement("option");
+      option.value=id;
+      const friendly=this._hass?.states?.[id]?.attributes?.friendly_name;
+      option.textContent=friendly&&friendly!==id?friendly+" ("+id+")":id;
+      option.selected=id===selectedEntity;
+      entitySelect.append(option);
+    }
+    entitySelect.addEventListener("change",()=>this._change("active_entity",entitySelect.value));
+    entityWrapper.append(entitySelect);root.append(entityWrapper);
     field("Использовать помощники Home Assistant","use_ha_helpers","checkbox");
     field("Показывать заголовки","show_labels","checkbox");
+    field("Показывать форму питания","show_food","checkbox");
     field("Отступы между блоками (px)","section_gap","number");
     for(const [key,label] of [["action_columns","Колонки действий"],["symptom_columns","Колонки симптомов"],["medication_columns","Колонки лекарств"]])field(label,key,"number");
     for(const [key,label] of [["action_display","Кнопки действий"],["symptom_display","Кнопки симптомов"],["medication_display","Кнопки лекарств"]])field(label,key,"text",[["both","Иконка и текст"],["icon","Только иконка"],["label","Только текст"]]);
