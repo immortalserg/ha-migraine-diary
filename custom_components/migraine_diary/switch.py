@@ -44,7 +44,8 @@ class DiaryToggle(SwitchEntity, RestoreEntity):
         self._entry_id = entry_id
         self._attr_unique_id = f"{entry_id}_{slug}"
         self.entity_id = f"switch.{slug}"
-        self._attr_name = label
+        self._attr_translation_key = "zone" if slug.startswith("migraine_zone_") else "symptom"
+        self._attr_translation_placeholders = {"number": slug.split("_")[-1], "symptom": label}
         self._attr_is_on = False
 
     async def async_added_to_hass(self):
