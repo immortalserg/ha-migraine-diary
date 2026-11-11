@@ -300,6 +300,9 @@ class MigraineDiaryCard extends HTMLElement {
     this._loadedAssessmentKey = null;
     this._draftRestoredKey = null;
     this._busy = false; this._svgLoaded = false;
+    this._foodHistory = null;
+    this._foodHistoryLoading = false;
+    this._foodHistoryError = "";
     if(!this.shadowRoot)this.attachShadow({mode:"open"});
     this._loadSvg();
     this._render();
@@ -440,6 +443,7 @@ class MigraineDiaryCard extends HTMLElement {
     this._busy=true;this._message="";this._render();
     try {
       await this._hass.callService("migraine_diary",service,{profile_id:this._config.profile_id,...data});
+      if(service==="record_food" && this._foodHistory!==null)await this._loadFoodHistory();
       // Update controls as soon as HA confirms the action; do not wait for
       // the state_changed websocket event (which may arrive seconds later).
       if(service==="start_episode" || service==="end_episode"){
@@ -452,6 +456,23 @@ class MigraineDiaryCard extends HTMLElement {
       this._message=this._t("error")+": "+(e?.message || String(e));
     }
     finally {this._busy=false;this._render();}
+  }
+  async _loadFoodHistory(){
+    if(this._foodHistoryLoading || !this._hass)return;
+    this._foodHistoryLoading=true;this._foodHistoryError="";
+    try{
+      const token=this._hass.auth?.data?.access_token;
+      if(!token)throw Error("Home Assistant access token unavailable");
+      const params=new URLSearchParams({profile_id:this._config.profile_id,limit:"1000"});
+      const response=await fetch("/api/migraine_diary/history?"+params.toString(),{
+        headers:{Authorization:"Bearer "+token},cache:"no-store"
+      });
+      if(!response.ok)throw Error("History HTTP "+response.status);
+      const data=await response.json();
+      this._foodHistory=(Array.isArray(data.records)?data.records:[])
+        .filter(record=>record.event==="food").slice(0,20);
+    }catch(error){this._foodHistoryError=error?.message||String(error);}
+    finally{this._foodHistoryLoading=false;this._render();}
   }
   _showLabel(key){
     const value=this._config.show_labels;
@@ -689,15 +710,48 @@ class MigraineDiaryCard extends HTMLElement {
     const foodQuantity=document.createElement("input");foodQuantity.maxLength=100;foodQuantity.placeholder=this._language()==="ru"?"Количество (необязательно)":"Quantity (optional)";
     const foodNotes=document.createElement("input");foodNotes.maxLength=500;foodNotes.placeholder=this._language()==="ru"?"Примечание (необязательно)":"Notes (optional)";
     const foodSubmit=document.createElement("button");foodSubmit.type="submit";foodSubmit.textContent=this._language()==="ru"?"Записать приём пищи":"Save food";
-    foodForm.append(foodName,foodQuantity,foodNotes,foodSubmit);
+    const foodTimeLabel=document.createElement("label");
+    foodTimeLabel.textContent=this._language()==="ru"?"Дата и время приёма пищи":"Date and time";
+    const foodTime=document.createElement("input");foodTime.type="datetime-local";
+    const localNow=new Date();
+    foodTime.value=new Date(localNow.getTime()-localNow.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    foodTimeLabel.append(foodTime);
+    foodForm.append(foodName,foodQuantity,foodNotes,foodTimeLabel,foodSubmit);
     foodForm.addEventListener("submit",async event=>{
       event.preventDefault();
       const name=foodName.value.trim();if(!name||this._busy)return;
       const payload={name};
       if(foodQuantity.value.trim())payload.quantity=foodQuantity.value.trim();
       if(foodNotes.value.trim())payload.notes=foodNotes.value.trim();
+      if(foodTime.value){
+        const date=new Date(foodTime.value);
+        if(Number.isNaN(date.getTime())){this._message="Invalid food date/time";this._render();return;}
+        if(date.getTime()>Date.now()){this._message=this._language()==="ru"?"Дата приёма пищи не может быть в будущем":"Food date cannot be in the future";this._render();return;}
+        payload.occurred_at=date.toISOString();
+      }
       await this._call("record_food",payload);
     });
+    const foodHistory=document.createElement("div");
+    const foodHistoryButton=document.createElement("button");
+    foodHistoryButton.textContent=this._foodHistoryLoading?"…":this._language()==="ru"?"Обновить историю питания":"Refresh food history";
+    foodHistoryButton.disabled=this._foodHistoryLoading;
+    foodHistoryButton.addEventListener("click",()=>this._loadFoodHistory());
+    foodHistory.append(foodHistoryButton);
+    if(this._foodHistoryError){
+      const error=document.createElement("p");error.className="message";error.textContent=this._foodHistoryError;foodHistory.append(error);
+    }
+    if(this._foodHistory!==null){
+      if(!this._foodHistory.length){
+        const empty=document.createElement("p");empty.textContent=this._language()==="ru"?"Записей о питании пока нет":"No food records";foodHistory.append(empty);
+      }
+      for(const item of this._foodHistory){
+        const line=document.createElement("div");line.style.cssText="padding:7px 0;border-bottom:1px solid var(--divider-color)";
+        const date=new Date(item.date);
+        const dateText=Number.isNaN(date.getTime())?item.date:date.toLocaleString(this._language()==="lu"?"lb":this._language());
+        line.textContent=dateText+" — "+item.food+(item.quantity?" · "+item.quantity:"")+(item.notes?" · "+item.notes:"");
+        foodHistory.append(line);
+      }
+    }
     // Assemble each logical section in its own wrapper, preserving spacing
     // even when all headings are hidden.
     const mapNode=Array.from(card.children).find(el=>el.classList?.contains("map"));
@@ -705,7 +759,7 @@ class MigraineDiaryCard extends HTMLElement {
     const sectionContents={
       actions:[actions],zones:[zonesHeading,mapNode||fallbackNode],
       intensity:[intensity,levels],symptoms:[symptomHeading,symptoms],
-      medications:[medications,pills],food:[foodHeading,foodForm]
+      medications:[medications,pills],food:[foodHeading,foodForm,foodHistory]
     };
     for(const key of this._config.section_order){
       const section=document.createElement("section");section.className="section";
