@@ -367,23 +367,22 @@ class MigraineDiaryCard extends HTMLElement {
   }
 
   _language() {
-    const entityId=this._config.active_entity || "binary_sensor.migren";
+    // A card-specific language overrides the integration's setting.
+    // With "auto", each user's Home Assistant locale takes precedence.
+    const configured=String(this._config?.language || "auto").toLowerCase();
     const states=this._hass?.states || {};
-    const integrationLanguage=states[entityId]?.attributes?.language
-      || states["sensor.migraine_diary_last_record"]?.attributes?.language
-      || Object.entries(states).find(([id, state]) =>
-        id.startsWith("binary_sensor.") &&
-        state?.attributes?.language &&
-        state?.attributes?.friendly_name?.includes("Migraine")
-      )?.[1]?.attributes?.language;
-    const selected=this._config.language && this._config.language!=="auto"
-      ? this._config.language
-      : integrationLanguage && integrationLanguage!=="auto"
+    const entityId=this._config?.active_entity || "binary_sensor.migren";
+    const integrationLanguage=states["sensor.migraine_diary_last_record"]?.attributes?.language
+      || states[entityId]?.attributes?.language
+      || "auto";
+    const selected=configured!=="auto"
+      ? configured
+      : integrationLanguage!=="auto"
         ? integrationLanguage
         : this._hass?.locale?.language || this._hass?.language || navigator.language || "en";
-    const raw=String(selected).toLowerCase().split(/[-_]/)[0];
-    const lang=raw==="lb"?"lu":raw;
-    return WORDS[lang] ? lang : "en";
+    const normalized=String(selected).toLowerCase().split(/[-_]/)[0];
+    const lang=normalized==="lb"?"lu":normalized;
+    return Object.hasOwn(WORDS,lang) ? lang : "en";
   }
   _t(key){return EXTRA_WORDS[this._language()]?.[key] || WORDS[this._language()][key] || key;}
   _entityActive() {
