@@ -298,8 +298,8 @@ class MigraineDiaryCard extends HTMLElement {
       zones:[...this._zones].sort((a,b)=>a-b),
       symptoms:[...this._symptoms]
     }),!active,"action-btn"));
-    const pastButton=this._button("Прошлый приступ",()=>this._openPastDialog());
-    pastButton.style.marginTop="8px";
+
+    actions.append(this._tile("Прошлый приступ","mdi:calendar-clock",this._config.action_display,()=>this._openPastDialog(),false,"action-btn"));
     const zonesHeading=document.createElement("h3");zonesHeading.textContent=this._t("zones");if(this._showLabel("zones"))card.append(zonesHeading);
     if(this._svgLoaded){
       const holder=document.createElement("div");holder.className="map";
@@ -370,7 +370,7 @@ class MigraineDiaryCard extends HTMLElement {
     const mapNode=Array.from(card.children).find(el=>el.classList?.contains("map"));
     const fallbackNode=!mapNode?Array.from(card.children).find(el=>el.classList?.contains("row")&&el!==levels):null;
     const sectionContents={
-      actions:[actions,pastButton],zones:[zonesHeading,mapNode||fallbackNode],
+      actions:[actions],zones:[zonesHeading,mapNode||fallbackNode],
       intensity:[intensity,levels],symptoms:[symptomHeading,symptoms],
       medications:[medications,pills]
     };
