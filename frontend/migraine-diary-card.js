@@ -3,12 +3,164 @@
  * SVG: /local/migraine-diary/head.svg (bundled in frontend/head.svg).
  */
 const WORDS = {
-  lb: {title:"Migränendagbuch",start:"Ufank",end:"Enn",premonition:"Virzeechen",pain:"Schmäerzintensitéit",zones:"Schmäerzberäicher",symptoms:"Symptomer",medications:"Medikamenter",record:"Schmäerz späicheren",noEpisode:"Keen aktiven Ufall",active:"Ufall ass aktiv",error:"Feeler",nausea:"Iwwelzegkeet",vomiting:"Erbriechen",light:"Liichtempfindlechkeet",noise:"Kaméidiempfindlechkeet",neck:"Halswéi",dizzy:"Schwindel",blur:"Onschaarf Siicht",fatigue:"Middegkeet"},
+  lu: {title:"Migränendagbuch",start:"Ufank",end:"Enn",premonition:"Virzeechen",pain:"Schmäerzintensitéit",zones:"Schmäerzberäicher",symptoms:"Symptomer",medications:"Medikamenter",record:"Schmäerz späicheren",noEpisode:"Keen aktiven Ufall",active:"Ufall ass aktiv",error:"Feeler",nausea:"Iwwelzegkeet",vomiting:"Erbriechen",light:"Liichtempfindlechkeet",noise:"Kaméidiempfindlechkeet",neck:"Halswéi",dizzy:"Schwindel",blur:"Onschaarf Siicht",fatigue:"Middegkeet"},
   en: {title:"Migraine Diary",start:"Start",end:"End",premonition:"Premonition",pain:"Pain intensity",zones:"Pain locations",symptoms:"Symptoms",medications:"Medications",record:"Update state",noEpisode:"No active episode",active:"Episode active",error:"Error",nausea:"Nausea",vomiting:"Vomiting",light:"Light sensitivity",noise:"Sound sensitivity",neck:"Neck pain",dizzy:"Dizziness",blur:"Blurred vision",fatigue:"Fatigue"},
   ru: {title:"Дневник мигрени",start:"Начало",end:"Конец",premonition:"Предчувствие",pain:"Интенсивность боли",zones:"Зоны боли",symptoms:"Симптомы",medications:"Лекарства",record:"Обновить состояние",noEpisode:"Нет активного приступа",active:"Приступ активен",error:"Ошибка",nausea:"Тошнота",vomiting:"Рвота",light:"Светочувствительность",noise:"Чувствительность к шуму",neck:"Боль в шее",dizzy:"Головокружение",blur:"Нечёткое зрение",fatigue:"Усталость"},
   fr: {title:"Journal de migraine",start:"Début",end:"Fin",premonition:"Signes précurseurs",pain:"Intensité de la douleur",zones:"Zones douloureuses",symptoms:"Symptômes",medications:"Médicaments",record:"Enregistrer la douleur",noEpisode:"Aucune crise active",active:"Crise en cours",error:"Erreur",nausea:"Nausée",vomiting:"Vomissements",light:"Sensibilité à la lumière",noise:"Sensibilité au bruit",neck:"Douleur cervicale",dizzy:"Vertiges",blur:"Vision floue",fatigue:"Fatigue"},
   de: {title:"Migränetagebuch",start:"Beginn",end:"Ende",premonition:"Vorboten",pain:"Schmerzstärke",zones:"Schmerzzonen",symptoms:"Symptome",medications:"Medikamente",record:"Schmerz speichern",noEpisode:"Kein aktiver Anfall",active:"Anfall läuft",error:"Fehler",nausea:"Übelkeit",vomiting:"Erbrechen",light:"Lichtempfindlichkeit",noise:"Geräuschempfindlichkeit",neck:"Nackenschmerzen",dizzy:"Schwindel",blur:"Verschwommenes Sehen",fatigue:"Müdigkeit"},
   it: {title:"Diario dell'emicrania",start:"Inizio",end:"Fine",premonition:"Sintomi premonitori",pain:"Intensità del dolore",zones:"Zone dolorose",symptoms:"Sintomi",medications:"Farmaci",record:"Registra dolore",noEpisode:"Nessun attacco attivo",active:"Attacco in corso",error:"Errore",nausea:"Nausea",vomiting:"Vomito",light:"Sensibilità alla luce",noise:"Sensibilità ai suoni",neck:"Dolore al collo",dizzy:"Vertigini",blur:"Vista offuscata",fatigue:"Stanchezza"}
+};
+const EXTRA_WORDS={
+  "ru": {
+    "past": "Прошлый приступ",
+    "pastTitle": "Запись задним числом",
+    "action": "Действие",
+    "pastMode": "Прошедший приступ: начало и конец",
+    "startMode": "Исправить начало активного приступа",
+    "endMode": "Завершить активный приступ задним числом",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "export": "Экспорт CSV",
+    "occupied": "Занятые интервалы:",
+    "loading": "Загрузка занятых интервалов…",
+    "none": "Нет записанных приступов",
+    "ongoing": "активен",
+    "noActive": "Нет активного приступа",
+    "futureStart": "Начало не может быть в будущем",
+    "futureEnd": "Конец не может быть в будущем",
+    "laterStart": "Новое начало должно быть раньше записанного",
+    "beforeStart": "Конец раньше начала приступа",
+    "beforeEnd": "Конец должен быть позже начала",
+    "overlap": "Приступ пересекается с занятым интервалом",
+    "overlapStart": "Начало пересекается с предыдущим приступом",
+    "missing": "Укажите дату и время",
+    "loadError": "Не удалось загрузить интервалы: "
+  },
+  "en": {
+    "past": "Past episode",
+    "pastTitle": "Record retrospectively",
+    "action": "Action",
+    "pastMode": "Past episode: start and end",
+    "startMode": "Correct active episode start",
+    "endMode": "End active episode retrospectively",
+    "cancel": "Cancel",
+    "save": "Save",
+    "export": "Export CSV",
+    "occupied": "Occupied intervals:",
+    "loading": "Loading existing intervals…",
+    "none": "No recorded episodes",
+    "ongoing": "active",
+    "noActive": "No active episode",
+    "futureStart": "Start cannot be in the future",
+    "futureEnd": "End cannot be in the future",
+    "laterStart": "New start must precede recorded start",
+    "beforeStart": "End precedes episode start",
+    "beforeEnd": "End must be after start",
+    "overlap": "Episode overlaps an existing interval",
+    "overlapStart": "Start overlaps a previous episode",
+    "missing": "Enter date and time",
+    "loadError": "Unable to load intervals: "
+  },
+  "fr": {
+    "past": "Crise passée",
+    "pastTitle": "Saisie rétroactive",
+    "action": "Action",
+    "pastMode": "Crise passée : début et fin",
+    "startMode": "Corriger le début de la crise active",
+    "endMode": "Terminer la crise active rétroactivement",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "export": "Exporter CSV",
+    "occupied": "Périodes occupées :",
+    "loading": "Chargement des périodes…",
+    "none": "Aucune crise enregistrée",
+    "ongoing": "en cours",
+    "noActive": "Aucune crise active",
+    "futureStart": "Le début ne peut pas être dans le futur",
+    "futureEnd": "La fin ne peut pas être dans le futur",
+    "laterStart": "Le nouveau début doit précéder celui enregistré",
+    "beforeStart": "La fin précède le début",
+    "beforeEnd": "La fin doit suivre le début",
+    "overlap": "La crise chevauche une période existante",
+    "overlapStart": "Le début chevauche une crise précédente",
+    "missing": "Indiquez la date et l’heure",
+    "loadError": "Impossible de charger les périodes : "
+  },
+  "de": {
+    "past": "Früherer Anfall",
+    "pastTitle": "Nachträglich erfassen",
+    "action": "Aktion",
+    "pastMode": "Früherer Anfall: Beginn und Ende",
+    "startMode": "Beginn des aktiven Anfalls korrigieren",
+    "endMode": "Aktiven Anfall nachträglich beenden",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "export": "CSV exportieren",
+    "occupied": "Belegte Zeiträume:",
+    "loading": "Zeiträume werden geladen…",
+    "none": "Keine Anfälle erfasst",
+    "ongoing": "aktiv",
+    "noActive": "Kein aktiver Anfall",
+    "futureStart": "Beginn darf nicht in der Zukunft liegen",
+    "futureEnd": "Ende darf nicht in der Zukunft liegen",
+    "laterStart": "Neuer Beginn muss vor dem erfassten liegen",
+    "beforeStart": "Ende liegt vor dem Beginn",
+    "beforeEnd": "Ende muss nach dem Beginn liegen",
+    "overlap": "Anfall überschneidet sich mit vorhandenem Zeitraum",
+    "overlapStart": "Beginn überschneidet sich mit vorherigem Anfall",
+    "missing": "Datum und Uhrzeit eingeben",
+    "loadError": "Zeiträume konnten nicht geladen werden: "
+  },
+  "it": {
+    "past": "Attacco passato",
+    "pastTitle": "Registrazione retroattiva",
+    "action": "Azione",
+    "pastMode": "Attacco passato: inizio e fine",
+    "startMode": "Correggi inizio attacco attivo",
+    "endMode": "Termina retroattivamente attacco attivo",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "export": "Esporta CSV",
+    "occupied": "Intervalli occupati:",
+    "loading": "Caricamento intervalli…",
+    "none": "Nessun attacco registrato",
+    "ongoing": "attivo",
+    "noActive": "Nessun attacco attivo",
+    "futureStart": "L'inizio non può essere nel futuro",
+    "futureEnd": "La fine non può essere nel futuro",
+    "laterStart": "Il nuovo inizio deve precedere quello registrato",
+    "beforeStart": "La fine precede l'inizio",
+    "beforeEnd": "La fine deve seguire l'inizio",
+    "overlap": "L'attacco si sovrappone a un intervallo esistente",
+    "overlapStart": "L'inizio si sovrappone a un attacco precedente",
+    "missing": "Inserisci data e ora",
+    "loadError": "Impossibile caricare gli intervalli: "
+  },
+  "lu": {
+    "past": "Fréieren Ufall",
+    "pastTitle": "Réckwierkend androen",
+    "action": "Aktioun",
+    "pastMode": "Fréieren Ufall: Ufank an Enn",
+    "startMode": "Ufank vum aktiven Ufall korrigéieren",
+    "endMode": "Aktiven Ufall réckwierkend ofschléissen",
+    "cancel": "Ofbriechen",
+    "save": "Späicheren",
+    "export": "CSV exportéieren",
+    "occupied": "Besate Zäitraim:",
+    "loading": "Zäitraim gi gelueden…",
+    "none": "Keng Ufäll gespäichert",
+    "ongoing": "aktiv",
+    "noActive": "Keen aktiven Ufall",
+    "futureStart": "Ufank däerf net an der Zukunft leien",
+    "futureEnd": "Enn däerf net an der Zukunft leien",
+    "laterStart": "Neien Ufank muss virum gespäicherten Ufank leien",
+    "beforeStart": "Enn läit virum Ufank",
+    "beforeEnd": "Enn muss nom Ufank leien",
+    "overlap": "Ufall iwwerschneit sech mat engem existente Zäitraum",
+    "overlapStart": "Ufank iwwerschneit sech mat engem fréieren Ufall",
+    "missing": "Datum an Auerzäit uginn",
+    "loadError": "Zäitraim konnten net geluede ginn: "
+  }
 };
 const SECTION_IDS=["actions","zones","intensity","symptoms","medications"];
 const DEFAULT_SECTION_ORDER=[...SECTION_IDS];
@@ -106,7 +258,7 @@ class MigraineDiaryCard extends HTMLElement {
     const lang=(this._config.language || this._hass?.locale?.language || this._hass?.language || "en").toLowerCase().split("-")[0];
     return WORDS[lang] ? lang : "en";
   }
-  _t(key){return WORDS[this._language()][key] || key;}
+  _t(key){return EXTRA_WORDS[this._language()]?.[key] || WORDS[this._language()][key] || key;}
   _entityActive() {
     const entity=this._config.active_entity || "binary_sensor.migren";
     const state=this._hass?.states?.[entity];
@@ -194,10 +346,10 @@ class MigraineDiaryCard extends HTMLElement {
   _openPastDialog(){
     const dialog=document.createElement("dialog");
     dialog.style.cssText="border:1px solid var(--divider-color);border-radius:12px;padding:20px;background:var(--card-background-color);color:var(--primary-text-color);max-width:90vw";
-    const title=document.createElement("h3");title.textContent="Запись задним числом";dialog.append(title);
-    const modeLabel=document.createElement("label");modeLabel.textContent="Действие";
+    const title=document.createElement("h3");title.textContent=this._t("pastTitle");dialog.append(title);
+    const modeLabel=document.createElement("label");modeLabel.textContent=this._t("action");
     const mode=document.createElement("select");mode.style.cssText="display:block;width:100%;padding:8px;margin:6px 0 12px";
-    for(const [value,name] of [["past","Прошедший приступ: начало и конец"],["start","Исправить начало активного приступа"],["end","Завершить активный приступ задним числом"]]){
+    for(const [value,name] of [["past",this._t("pastMode")],["start",this._t("startMode")],["end",this._t("endMode")]]){
       const option=document.createElement("option");option.value=value;option.textContent=name;mode.append(option);
     }
     modeLabel.append(mode);dialog.append(modeLabel);
@@ -207,35 +359,35 @@ class MigraineDiaryCard extends HTMLElement {
       const input=document.createElement("input");input.type="datetime-local";input.required=true;input.style.cssText="display:block;margin-top:5px;padding:8px;max-width:100%";
       label.append(input);dialog.append(label);fields[key]={label,input};
     }
-    const occupied=document.createElement("div");occupied.style.cssText="font-size:13px;margin:12px 0;max-height:150px;overflow:auto";occupied.textContent="Загрузка занятых интервалов…";dialog.append(occupied);
+    const occupied=document.createElement("div");occupied.style.cssText="font-size:13px;margin:12px 0;max-height:150px;overflow:auto";occupied.textContent=this._t("loading");dialog.append(occupied);
     const error=document.createElement("p");error.style.color="var(--error-color)";dialog.append(error);
     let episodes=null;
     const activeEpisode=()=>episodes?.find(ep=>ep.ended_at===null);
-    const formatDate=value=>new Date(value).toLocaleString("ru-RU");
+    const formatDate=value=>new Date(value).toLocaleString(this._language());
     const validate=()=>{
       error.textContent="";
       const kind=mode.value,active=activeEpisode();
       const start=fields.start.input.value?new Date(fields.start.input.value).getTime():NaN;
       const end=fields.end.input.value?new Date(fields.end.input.value).getTime():NaN;
       const now=Date.now();
-      if(kind==="end"&&episodes&&!active){error.textContent="Нет активного приступа";return false;}
+      if(kind==="end"&&episodes&&!active){error.textContent=this._t("noActive");return false;}
       if(kind==="start"){
         if(!Number.isFinite(start))return false;
-        if(start>now){error.textContent="Начало не может быть в будущем";return false;}
-        if(active&&start>new Date(active.started_at).getTime()){error.textContent="Новое начало должно быть раньше записанного";return false;}
+        if(start>now){error.textContent=this._t("futureStart");return false;}
+        if(active&&start>new Date(active.started_at).getTime()){error.textContent=this._t("laterStart");return false;}
         if(episodes?.some(ep=>ep.id!==active?.id&&(!active||new Date(ep.started_at).getTime()<new Date(active.started_at).getTime())&&(ep.ended_at===null||new Date(ep.ended_at).getTime()>start))){
-          error.textContent="Начало пересекается с предыдущим приступом";return false;
+          error.textContent=this._t("overlapStart");return false;
         }
       }else if(kind==="end"){
         if(!Number.isFinite(end))return false;
-        if(end>now){error.textContent="Конец не может быть в будущем";return false;}
-        if(active&&end<new Date(active.started_at).getTime()){error.textContent="Конец раньше начала приступа";return false;}
+        if(end>now){error.textContent=this._t("futureEnd");return false;}
+        if(active&&end<new Date(active.started_at).getTime()){error.textContent=this._t("beforeStart");return false;}
       }else{
         if(!Number.isFinite(start)||!Number.isFinite(end))return false;
-        if(start>=end){error.textContent="Конец должен быть позже начала";return false;}
-        if(end>now){error.textContent="Конец не может быть в будущем";return false;}
+        if(start>=end){error.textContent=this._t("beforeEnd");return false;}
+        if(end>now){error.textContent=this._t("futureEnd");return false;}
         if(episodes?.some(ep=>new Date(ep.started_at).getTime()<end&&(ep.ended_at===null||new Date(ep.ended_at).getTime()>start))){
-          error.textContent="Приступ пересекается с занятым интервалом";return false;
+          error.textContent=this._t("overlap");return false;
         }
       }
       return true;
@@ -247,9 +399,9 @@ class MigraineDiaryCard extends HTMLElement {
     };
     mode.addEventListener("change",refresh);
     Object.values(fields).forEach(field=>field.input.addEventListener("input",validate));
-    const cancel=this._button("Отмена",()=>dialog.close());
-    const save=this._button("Сохранить",async()=>{
-      if(!validate()){if(!error.textContent)error.textContent="Укажите дату и время";return;}
+    const cancel=this._button(this._t("cancel"),()=>dialog.close());
+    const save=this._button(this._t("save"),async()=>{
+      if(!validate()){if(!error.textContent)error.textContent=this._t("missing");return;}
       const kind=mode.value;
       const data={profile_id:this._config.profile_id};
       if(kind!=="end")data.started_at=new Date(fields.start.input.value).toISOString();
@@ -271,13 +423,13 @@ class MigraineDiaryCard extends HTMLElement {
         if(!dialog.isConnected)return;
         episodes=data.episodes||[];
         occupied.replaceChildren();
-        const heading=document.createElement("strong");heading.textContent="Занятые интервалы:";occupied.append(heading);
-        if(!episodes.length){const empty=document.createElement("div");empty.textContent="Нет записанных приступов";occupied.append(empty);}
+        const heading=document.createElement("strong");heading.textContent=this._t("occupied");occupied.append(heading);
+        if(!episodes.length){const empty=document.createElement("div");empty.textContent=this._t("none");occupied.append(empty);}
         for(const ep of episodes){
-          const line=document.createElement("div");line.textContent=formatDate(ep.started_at)+" — "+(ep.ended_at?formatDate(ep.ended_at):"активен");line.style.marginTop="5px";occupied.append(line);
+          const line=document.createElement("div");line.textContent=formatDate(ep.started_at)+" — "+(ep.ended_at?formatDate(ep.ended_at):this._t("ongoing"));line.style.marginTop="5px";occupied.append(line);
         }
         refresh();
-      }).catch(err=>{if(dialog.isConnected)occupied.textContent="Не удалось загрузить интервалы: "+String(err?.message||err);});
+      }).catch(err=>{if(dialog.isConnected)occupied.textContent=this._t("loadError")+String(err?.message||err);});
   }
   _render(){
     if(!this.shadowRoot || !this._config)return;
@@ -331,7 +483,7 @@ class MigraineDiaryCard extends HTMLElement {
       symptoms:[...this._symptoms]
     }),!active,"action-btn"));
 
-    actions.append(this._tile("Прошлый приступ","mdi:calendar-clock",this._config.action_display,()=>this._openPastDialog(),false,"action-btn"));
+    actions.append(this._tile(this._t("past"),"mdi:calendar-clock",this._config.action_display,()=>this._openPastDialog(),false,"action-btn"));
     const zonesHeading=document.createElement("h3");zonesHeading.textContent=this._t("zones");if(this._showLabel("zones"))card.append(zonesHeading);
     if(this._svgLoaded){
       const holder=document.createElement("div");holder.className="map";
@@ -419,7 +571,7 @@ class MigraineDiaryCard extends HTMLElement {
       }
       card.append(section);
     }
-    const exportButton=this._button("Экспорт CSV",()=>this._exportCsv());
+    const exportButton=this._button(this._t("export"),()=>this._exportCsv());
     exportButton.style.marginTop="14px";card.append(exportButton);
     if(this._message){const msg=document.createElement("div");msg.className="message";msg.textContent=this._message;card.append(msg);}
   }
