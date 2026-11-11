@@ -30,25 +30,30 @@ class MigraineHistoryView(HomeAssistantView):
             except (ValueError, TypeError) as err:
                 return web.json_response({"error": str(err)}, status=400)
             return web.json_response({"episodes": episodes}, headers={"Cache-Control": "no-store"})
-        try:
-            limit = int(params.get("limit", "200"))
-            records = await self._store.list_history(
-                profile_id, limit=limit,
-                start=params.get("start"), end=params.get("end"),
-            )
-        except (ValueError, TypeError) as err:
-            return web.json_response({"error": str(err)}, status=400)
         if params.get("format") == "csv":
-            output = io.StringIO()
-            columns = [
-                "date", "event", "level", "zones", "symptoms",
-                "medication", "food", "quantity", "notes", "dose", "unit", "episode_id", "id",
-            ]
-            writer = csv.DictWriter(
-                output, fieldnames=columns, extrasaction="ignore", delimiter=";"
-            )
-            writer.writeheader()
-            writer.writerows(records)
+            try:
+                output = io.StringIO()
+                columns = [
+                    "date", "event", "level", "zones", "symptoms",
+                    "medication", "food", "quantity", "notes", "dose", "unit",
+                    "episode_id", "id",
+                ]
+                writer = csv.DictWriter(
+                    output, fieldnames=columns, extrasaction="ignore", delimiter=";"
+                )
+                writer.writeheader()
+                offset = 0
+                while True:
+                    batch = await self._store.list_history(
+                        profile_id, limit=1000, offset=offset,
+                        start=params.get("start"), end=params.get("end"),
+                    )
+                    writer.writerows(batch)
+                    offset += len(batch)
+                    if len(batch) < 1000:
+                        break
+            except (ValueError, TypeError) as err:
+                return web.json_response({"error": str(err)}, status=400)
             return web.Response(
                 body=("\ufeff" + output.getvalue()).encode("utf-8"),
                 content_type="text/csv",
@@ -57,6 +62,14 @@ class MigraineHistoryView(HomeAssistantView):
                     "Cache-Control": "no-store",
                 },
             )
+        try:
+            limit = int(params.get("limit", "200"))
+            records = await self._store.list_history(
+                profile_id, limit=limit,
+                start=params.get("start"), end=params.get("end"),
+            )
+        except (ValueError, TypeError) as err:
+            return web.json_response({"error": str(err)}, status=400)
         return web.json_response(
             {"records": records},
             headers={"Cache-Control": "no-store"},

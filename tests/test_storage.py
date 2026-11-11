@@ -99,6 +99,17 @@ class DiaryStoreTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(any(row["id"] == food_id for row in history))
         self.assertTrue(any(row["id"] == pain_id for row in history))
 
+    async def test_history_pagination_returns_all_events_without_duplicates(self):
+        for index in range(1005):
+            await self.store.record_event("patient", "food", {"name": f"Food {index}"})
+        first = await self.store.list_history("patient", limit=1000)
+        second = await self.store.list_history("patient", limit=1000, offset=1000)
+        self.assertEqual(len(first), 1000)
+        self.assertEqual(len(second), 5)
+        self.assertEqual(len({row["id"] for row in first + second}), 1005)
+        with self.assertRaises(ValueError):
+            await self.store.list_history("patient", offset=-1)
+
     async def test_prevent_duplicate_active_episode(self):
         await self.store.start_episode("patient")
         with self.assertRaises(ValueError):

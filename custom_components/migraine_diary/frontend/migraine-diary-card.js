@@ -529,7 +529,7 @@ class MigraineDiaryCard extends HTMLElement {
     if(this._busy||!this._hass)return;
     this._busy=true;this._message="";this._render();
     try{
-      const params=new URLSearchParams({profile_id:this._config.profile_id,limit:"1000",format:"csv"});
+      const params=new URLSearchParams({profile_id:this._config.profile_id,format:"csv"});
       const token=this._hass.auth?.data?.access_token;
       if(!token)throw Error("Home Assistant access token unavailable");
       const response=await fetch("/api/migraine_diary/history?"+params.toString(),{headers:{Authorization:"Bearer "+token}});
