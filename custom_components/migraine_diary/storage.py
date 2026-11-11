@@ -137,6 +137,22 @@ class DiaryStore:
         episode_id = str(uuid4())
         async with self._lock:
             def op(conn):
+                # Intervals are half-open: [start, end). Touching endpoints
+                # are permitted, but any positive-duration overlap is rejected.
+                # NULL ended_at represents an active, open-ended episode.
+                conflict = conn.execute(
+                    """SELECT id, started_at, ended_at FROM episodes
+                       WHERE profile_id=?
+                         AND started_at < ?
+                         AND (ended_at IS NULL OR ended_at > ?)
+                       ORDER BY started_at LIMIT 1""",
+                    (profile_id, end, start),
+                ).fetchone()
+                if conflict is not None:
+                    raise ValueError(
+                        "Приступ пересекается с существующим: "
+                        f"{conflict['started_at']} — {conflict['ended_at'] or 'активен'}"
+                    )
                 conn.execute(
                     "INSERT INTO episodes(id,profile_id,started_at,ended_at,headache_type) "
                     "VALUES(?,?,?,?,?)",
