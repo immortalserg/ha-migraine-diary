@@ -102,5 +102,157 @@
         }
       }
     }
+  },
+  "services": {
+    "start_episode": {
+      "name": "Inizia attacco",
+      "fields": {
+        "profile_id": {
+          "name": "Profilo"
+        },
+        "started_at": {
+          "name": "Inizio"
+        },
+        "headache_type": {
+          "name": "Tipo di cefalea"
+        },
+        "notes": {
+          "name": "Note"
+        }
+      }
+    },
+    "end_episode": {
+      "name": "Termina attacco",
+      "fields": {
+        "profile_id": {
+          "name": "Profilo"
+        },
+        "episode_id": {
+          "name": "ID attacco"
+        },
+        "ended_at": {
+          "name": "Fine"
+        }
+      }
+    },
+    "record_past_episode": {
+      "name": "Registra attacco passato",
+      "fields": {
+        "profile_id": {
+          "name": "Profilo"
+        },
+        "started_at": {
+          "name": "Inizio"
+        },
+        "ended_at": {
+          "name": "Fine"
+        }
+      }
+    },
+    "correct_active_start": {
+      "name": "Correggi inizio attacco",
+      "fields": {
+        "profile_id": {
+          "name": "Profilo"
+        },
+        "started_at": {
+          "name": "Inizio"
+        }
+      }
+    },
+    "record_premonition": {
+      "name": "Registra sintomi premonitori",
+      "fields": {
+        "profile_id": {
+          "name": "Profilo"
+        },
+        "symptoms": {
+          "name": "Sintomi"
+        },
+        "occurred_at": {
+          "name": "Ora evento"
+        }
+      }
+    },
+    "record_medication": {
+      "name": "Registra farmaco",
+      "fields": {
+        "profile_id": {
+          "name": "Profilo"
+        },
+        "name": {
+          "name": "Farmaco"
+        },
+        "dose": {
+          "name": "Dose"
+        },
+        "unit": {
+          "name": "Unità"
+        },
+        "episode_id": {
+          "name": "ID attacco"
+        },
+        "occurred_at": {
+          "name": "Ora evento"
+        }
+      }
+    },
+    "record_pain": {
+      "name": "Registra dolore",
+      "fields": {
+        "profile_id": {
+          "name": "Profilo"
+        },
+        "intensity": {
+          "name": "Intensità"
+        },
+        "zones": {
+          "name": "Zone dolorose"
+        },
+        "symptoms": {
+          "name": "Sintomi"
+        },
+        "episode_id": {
+          "name": "ID attacco"
+        },
+        "occurred_at": {
+          "name": "Ora evento"
+        }
+      }
+    },
+    "list_history": {
+      "name": "Visualizza cronologia",
+      "fields": {
+        "profile_id": {
+          "name": "Profilo"
+        },
+        "limit": {
+          "name": "Limite"
+        },
+        "start": {
+          "name": "Da"
+        },
+        "end": {
+          "name": "A"
+        }
+      }
+    },
+    "export_csv": {
+      "name": "Esporta CSV",
+      "fields": {
+        "profile_id": {
+          "name": "Profilo"
+        },
+        "limit": {
+          "name": "Limite"
+        },
+        "start": {
+          "name": "Da"
+        },
+        "end": {
+          "name": "A"
+        }
+      }
+    }
   }
 }
