@@ -91,5 +91,16 @@
         "name": "Ultima registrazione"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Lingua",
+        "description": "Scegli la lingua delle registrazioni. Automatico usa la lingua di Home Assistant.",
+        "data": {
+          "language": "Lingua"
+        }
+      }
+    }
   }
 }
