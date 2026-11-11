@@ -6,5 +6,90 @@
         "description": "Set up your headache diary"
       }
     }
+  },
+  "entity": {
+    "switch": {
+      "zone": {
+        "name": "Pain zone {number}"
+      },
+      "symptom_1": {
+        "name": "Severe stabbing pain"
+      },
+      "symptom_2": {
+        "name": "Throbbing pain"
+      },
+      "symptom_3": {
+        "name": "Intermittent throbbing pain"
+      },
+      "symptom_4": {
+        "name": "Worse with movement"
+      },
+      "symptom_5": {
+        "name": "Nausea"
+      },
+      "symptom_6": {
+        "name": "Vomiting"
+      },
+      "symptom_7": {
+        "name": "Light sensitivity"
+      },
+      "symptom_8": {
+        "name": "Sound sensitivity"
+      },
+      "symptom_9": {
+        "name": "Neck pain"
+      },
+      "symptom_10": {
+        "name": "Dizziness"
+      },
+      "symptom_11": {
+        "name": "Runny nose"
+      },
+      "symptom_12": {
+        "name": "Insomnia"
+      },
+      "symptom_13": {
+        "name": "Low mood"
+      },
+      "symptom_14": {
+        "name": "Anxiety"
+      },
+      "symptom_15": {
+        "name": "Sensitivity to smells"
+      },
+      "symptom_16": {
+        "name": "Feeling hot"
+      },
+      "symptom_17": {
+        "name": "Ringing in ears"
+      },
+      "symptom_18": {
+        "name": "Fatigue"
+      },
+      "symptom_19": {
+        "name": "Blurred vision"
+      },
+      "symptom_20": {
+        "name": "Mood swings"
+      }
+    },
+    "number": {
+      "migraine_level": {
+        "name": "Pain intensity"
+      }
+    },
+    "binary_sensor": {
+      "migraine_active": {
+        "name": "Migraine attack"
+      }
+    },
+    "sensor": {
+      "active_episode": {
+        "name": "Active episode"
+      },
+      "last_record": {
+        "name": "Last record"
+      }
+    }
   }
 }
