@@ -25,7 +25,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class MigraineBinarySensor(BinarySensorEntity):
     """on = active episode; off = no active episode."""
 
-    _attr_name = "Migren"
+    _attr_translation_key = "migraine_active"
     _attr_has_entity_name = False
     _attr_icon = "mdi:head-flash"
     _attr_should_poll = True
