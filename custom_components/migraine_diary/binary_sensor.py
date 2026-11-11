@@ -19,7 +19,7 @@ SCAN_INTERVAL = timedelta(seconds=30)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     store: DiaryStore = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([MigraineBinarySensor(store, entry.entry_id)], True)
+    async_add_entities([MigraineBinarySensor(store, entry.entry_id, entry)], True)
 
 
 class MigraineBinarySensor(BinarySensorEntity):
@@ -40,7 +40,8 @@ class MigraineBinarySensor(BinarySensorEntity):
             configuration_url="https://github.com/immortalserg/ha-migraine-diary",
         )
 
-    def __init__(self, store: DiaryStore, entry_id: str) -> None:
+    def __init__(self, store: DiaryStore, entry_id: str, entry: ConfigEntry) -> None:
+        self._entry = entry
         self._store = store
         self._entry_id = entry_id
         self._attr_unique_id = f"{entry_id}_migren"
@@ -64,11 +65,10 @@ class MigraineBinarySensor(BinarySensorEntity):
     async def async_update(self) -> None:
         active = await self._store.get_active_episode("patient")
         self._attr_is_on = active is not None
+        self._attr_extra_state_attributes = {"language": self._entry.options.get("language", "auto")}
         if active:
             pain = await self._store.get_latest_pain("patient")
-            self._attr_extra_state_attributes = {
+            self._attr_extra_state_attributes.update({
                 "episode_id": active["id"], "started_at": active["started_at"],
                 "latest_pain": pain,
-            }
-        else:
-            self._attr_extra_state_attributes = {}
+            })
