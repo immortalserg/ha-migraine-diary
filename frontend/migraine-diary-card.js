@@ -475,7 +475,7 @@ class MigraineDiaryCard extends HTMLElement {
     const error=document.createElement("p");error.style.color="var(--error-color)";dialog.append(error);
     let episodes=null;
     const activeEpisode=()=>episodes?.find(ep=>ep.ended_at===null);
-    const formatDate=value=>new Date(value).toLocaleString(this._language());
+    const formatDate=value=>new Date(value).toLocaleString(this._language()==="lu"?"lb-LU":this._language());
     const validate=()=>{
       error.textContent="";
       const kind=mode.value,active=activeEpisode();
