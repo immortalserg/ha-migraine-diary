@@ -770,6 +770,11 @@ class MigraineDiaryCard extends HTMLElement {
       intensity:[intensity,levels],symptoms:[symptomHeading,symptoms],
       medications:[medications,pills],food:[foodHeading,foodForm,foodHistory]
     };
+    // Controls were assembled directly on the card; detach them before
+    // reattaching only the sections allowed by card_mode.
+    for(const child of [...card.children]){
+      if(child!==h && !child.classList.contains("status"))child.remove();
+    }
     for(const key of this._config.section_order){
       const section=document.createElement("section");section.className="section";
       if((foodOnly && key!=="food") || (!foodOnly && key==="food" && this._config.card_mode==="migraine"))continue;
