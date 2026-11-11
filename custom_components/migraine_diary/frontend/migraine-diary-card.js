@@ -281,8 +281,11 @@ const SYMPTOM_TRANSLATIONS={
 };
 class MigraineDiaryCard extends HTMLElement {
   setConfig(config) {
-    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", action_button_color:"", action_icon_color:"", medication_button_color:"", medication_icon_color:"", show_food:true, ...config};
+    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", action_button_color:"", action_icon_color:"", medication_button_color:"", medication_icon_color:"", ...config};
     delete this._config.svg_url; // Legacy configuration is ignored: the SVG is bundled.
+    // Preserve existing cards that used show_food=false.
+    this._config.card_mode = config.card_mode ?? (config.show_food===false ? "migraine" : "both");
+    if(!["migraine","both","food"].includes(this._config.card_mode))throw Error("card_mode must be migraine, both or food");
     for(const key of ["button_font_size","button_icon_size","action_font_size","action_icon_size"]){
       const value=Number(this._config[key]);
       if(!Number.isFinite(value)||value<6||value>64)throw new Error(key+" must be 6–64 pixels");
@@ -304,7 +307,7 @@ class MigraineDiaryCard extends HTMLElement {
     this._foodHistoryLoading = false;
     this._foodHistoryError = "";
     if(!this.shadowRoot)this.attachShadow({mode:"open"});
-    this._loadSvg();
+    if(this._config.card_mode!=="food")this._loadSvg();
     this._render();
   }
   set hass(hass) {
@@ -625,9 +628,15 @@ class MigraineDiaryCard extends HTMLElement {
       `;
     root.append(style);
     const card=document.createElement("ha-card");root.append(card);
-    const h=document.createElement("h2");h.textContent=this._t("title");if(this._showLabel("title"))card.append(h);
-    const active=this._active();
-    const status=document.createElement("div");status.className="status";status.textContent=this._t(active?"active":"noEpisode");card.append(status);
+    const foodOnly=this._config.card_mode==="food";
+    const h=document.createElement("h2");h.textContent=foodOnly
+      ? ({ru:"Питание",fr:"Alimentation",de:"Ernährung",lu:"Ernärung",en:"Food"}[this._language()]||"Food")
+      : this._t("title");
+    if(this._showLabel("title"))card.append(h);
+    const active=foodOnly?false:this._active();
+    if(!foodOnly){
+      const status=document.createElement("div");status.className="status";status.textContent=this._t(active?"active":"noEpisode");card.append(status);
+    }
     const actions=document.createElement("div");actions.className="action-grid";
     actions.append(this._tile(this._t("start"),"mdi:play-circle-outline",this._config.action_display,()=>this._call("start_episode",{}),active,"action-btn"));
     actions.append(this._tile(this._t("end"),"mdi:stop-circle-outline",this._config.action_display,()=>this._call("end_episode",{episode_id:this._hass?.states?.[this._config.active_entity || "binary_sensor.migren"]?.attributes?.episode_id}),!active,"action-btn"));
@@ -763,7 +772,7 @@ class MigraineDiaryCard extends HTMLElement {
     };
     for(const key of this._config.section_order){
       const section=document.createElement("section");section.className="section";
-      if(key==="food" && this._config.show_food===false)continue;
+      if((foodOnly && key!=="food") || (!foodOnly && key==="food" && this._config.card_mode==="migraine"))continue;
       for(const node of sectionContents[key]){
         if(!node)continue;
         if(node===zonesHeading&&!this._showLabel("zones"))continue;
@@ -801,11 +810,18 @@ class MigraineDiaryCardEditor extends HTMLElement {
       if(options){for(const [value,name] of options){const option=document.createElement("option");option.value=value;option.textContent=name;input.append(option);}}
       else input.type=type;
       if(type==="checkbox"){input.checked=this._config[key]??true;}
-      else input.value=this._config[key]??"";
+      else input.value=key==="card_mode"
+        ? (this._config.card_mode??(this._config.show_food===false?"migraine":"both"))
+        : (this._config[key]??"");
       input.addEventListener("change",()=>this._change(key,type==="checkbox"?input.checked:type==="number"?Number(input.value):input.value));
       wrapper.append(input);root.append(wrapper);
     };
     field("Профиль","profile_id");
+    field("Содержимое карточки","card_mode","text",[
+      ["migraine","Только мигрень"],
+      ["both","Мигрень + питание"],
+      ["food","Только питание"]
+    ]);
     field("Язык карточки","language","text",[
       ["auto","Автоматически (Home Assistant)"],
       ["ru","Русский"],
@@ -831,7 +847,7 @@ class MigraineDiaryCardEditor extends HTMLElement {
     entityWrapper.append(entitySelect);root.append(entityWrapper);
     field("Использовать помощники Home Assistant","use_ha_helpers","checkbox");
     field("Показывать заголовки","show_labels","checkbox");
-    field("Показывать форму питания","show_food","checkbox");
+
     field("Отступы между блоками (px)","section_gap","number");
     for(const [key,label] of [["action_columns","Колонки действий"],["symptom_columns","Колонки симптомов"],["medication_columns","Колонки лекарств"]])field(label,key,"number");
     for(const [key,label] of [["action_display","Кнопки действий"],["symptom_display","Кнопки симптомов"],["medication_display","Кнопки лекарств"]])field(label,key,"text",[["both","Иконка и текст"],["icon","Только иконка"],["label","Только текст"]]);
