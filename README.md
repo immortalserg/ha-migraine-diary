@@ -22,9 +22,7 @@ This project is still a development preview. Back up Home Assistant before updat
 1. Copy the `custom_components/migraine_diary` directory into the Home Assistant `config/custom_components/` directory.
 2. Restart Home Assistant.
 3. Go to **Settings → Devices & services → Add integration** and select **Migraine Diary**.
-4. Copy `frontend/migraine-diary-card.js` into `config/www/migraine-diary/migraine-diary-card.js`.
-5. Add the Lovelace JavaScript resource `/local/migraine-diary/migraine-diary-card.js` as a **JavaScript module**.
-6. Add a manual Lovelace card with type `custom:migraine-diary-card`. If the card references an external SVG via `svg_url`, ensure that the referenced file is also accessible under `/local/`.
+4. Add a manual Lovelace card with type `custom:migraine-diary-card`. The JavaScript card and SVG are bundled and registered automatically when the integration loads. No separate resource registration is needed.
 
 ### Language settings
 
@@ -38,9 +36,9 @@ For testing as a **custom HACS repository**:
 2. Add `https://github.com/immortalserg/ha-migraine-diary` with category **Integration**.
 3. Find **Migraine Diary** in HACS and install it, then restart Home Assistant.
 4. Add the integration under **Settings → Devices & services**.
-5. **Install the companion Lovelace card manually** using steps 4–6 above. HACS installing the integration does not install the separate `frontend/` directory as a Lovelace resource.
+5. Add a manual Lovelace card of type `custom:migraine-diary-card`. The integration serves and registers its bundled JavaScript and SVG automatically.
 
-This is an unverified development installation path, not a claim of HACS default-store inclusion. Test installation and upgrades on a backed-up Home Assistant instance before release.
+This automatic frontend loading is not yet verified on a live Home Assistant instance. This is an unverified development installation path, not a claim of HACS default-store inclusion. Test installation and upgrades on a backed-up Home Assistant instance before release.
 
 ## Architecture
 
