@@ -75,6 +75,30 @@ class DiaryStoreTests(unittest.IsolatedAsyncioTestCase):
         history = await self.store.list_history("patient")
         self.assertTrue(any(row["event"] == "food" and row["food"] == "Yogurt" and row["quantity"] == "150 g" for row in history))
 
+    async def test_edit_and_delete_food_are_profile_scoped(self):
+        await self.store.create_profile("Other", "other")
+        food_id = await self.store.record_event("patient", "food", {"name": "Bread"})
+        pain_id = await self.store.record_event("patient", "pain", {"intensity": 5, "zones": [1]})
+        with self.assertRaises(ValueError):
+            await self.store.update_food("other", food_id, name="Wrong profile")
+        with self.assertRaises(ValueError):
+            await self.store.delete_food("other", food_id)
+        with self.assertRaises(ValueError):
+            await self.store.delete_food("patient", pain_id)
+        await self.store.update_food(
+            "patient", food_id, name="Yogurt", quantity="150 g",
+            notes="Breakfast", occurred_at="2026-11-09T08:00:00+01:00",
+        )
+        history = await self.store.list_history("patient")
+        record = next(row for row in history if row["id"] == food_id)
+        self.assertEqual(record["food"], "Yogurt")
+        self.assertEqual(record["quantity"], "150 g")
+        self.assertEqual(record["date"], "2026-11-09T07:00:00+00:00")
+        await self.store.delete_food("patient", food_id)
+        history = await self.store.list_history("patient")
+        self.assertFalse(any(row["id"] == food_id for row in history))
+        self.assertTrue(any(row["id"] == pain_id for row in history))
+
     async def test_prevent_duplicate_active_episode(self):
         await self.store.start_episode("patient")
         with self.assertRaises(ValueError):
