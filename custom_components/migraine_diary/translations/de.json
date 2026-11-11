@@ -6,5 +6,90 @@
         "description": "Kopfschmerztagebuch einrichten"
       }
     }
+  },
+  "entity": {
+    "switch": {
+      "zone": {
+        "name": "Schmerzzone {number}"
+      },
+      "symptom_1": {
+        "name": "Starker stechender Schmerz"
+      },
+      "symptom_2": {
+        "name": "Pulsierender Schmerz"
+      },
+      "symptom_3": {
+        "name": "Zeitweise pulsierender Schmerz"
+      },
+      "symptom_4": {
+        "name": "Schlimmer bei Bewegung"
+      },
+      "symptom_5": {
+        "name": "Übelkeit"
+      },
+      "symptom_6": {
+        "name": "Erbrechen"
+      },
+      "symptom_7": {
+        "name": "Lichtempfindlichkeit"
+      },
+      "symptom_8": {
+        "name": "Geräuschempfindlichkeit"
+      },
+      "symptom_9": {
+        "name": "Nackenschmerzen"
+      },
+      "symptom_10": {
+        "name": "Schwindel"
+      },
+      "symptom_11": {
+        "name": "Laufende Nase"
+      },
+      "symptom_12": {
+        "name": "Schlaflosigkeit"
+      },
+      "symptom_13": {
+        "name": "Gedrückte Stimmung"
+      },
+      "symptom_14": {
+        "name": "Angst"
+      },
+      "symptom_15": {
+        "name": "Geruchsempfindlichkeit"
+      },
+      "symptom_16": {
+        "name": "Hitzegefühl"
+      },
+      "symptom_17": {
+        "name": "Ohrgeräusche"
+      },
+      "symptom_18": {
+        "name": "Müdigkeit"
+      },
+      "symptom_19": {
+        "name": "Verschwommenes Sehen"
+      },
+      "symptom_20": {
+        "name": "Stimmungsschwankungen"
+      }
+    },
+    "number": {
+      "migraine_level": {
+        "name": "Schmerzintensität"
+      }
+    },
+    "binary_sensor": {
+      "migraine_active": {
+        "name": "Migräneanfall"
+      }
+    },
+    "sensor": {
+      "active_episode": {
+        "name": "Aktiver Anfall"
+      },
+      "last_record": {
+        "name": "Letzter Eintrag"
+      }
+    }
   }
 }
