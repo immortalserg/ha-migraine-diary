@@ -367,8 +367,16 @@ class MigraineDiaryCard extends HTMLElement {
   }
 
   _language() {
-    const lang=(this._config.language || this._hass?.locale?.language || this._hass?.language || "en").toLowerCase().split("-")[0];
-    return WORDS[lang==="lb"?"lu":lang] ? (lang==="lb"?"lu":lang) : "en";
+    const entityId=this._config.active_entity || "binary_sensor.migren";
+    const integrationLanguage=this._hass?.states?.[entityId]?.attributes?.language;
+    const selected=this._config.language && this._config.language!=="auto"
+      ? this._config.language
+      : integrationLanguage && integrationLanguage!=="auto"
+        ? integrationLanguage
+        : this._hass?.locale?.language || this._hass?.language || navigator.language || "en";
+    const raw=String(selected).toLowerCase().split(/[-_]/)[0];
+    const lang=raw==="lb"?"lu":raw;
+    return WORDS[lang] ? lang : "en";
   }
   _t(key){return EXTRA_WORDS[this._language()]?.[key] || WORDS[this._language()][key] || key;}
   _entityActive() {
