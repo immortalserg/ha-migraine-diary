@@ -281,7 +281,7 @@ const SYMPTOM_TRANSLATIONS={
 };
 class MigraineDiaryCard extends HTMLElement {
   setConfig(config) {
-    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", action_button_color:"", action_icon_color:"", medication_button_color:"", medication_icon_color:"", show_food:true, ...config};
+    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", action_button_color:"", action_icon_color:"", medication_button_color:"", medication_icon_color:"", ...config};
     delete this._config.svg_url; // Legacy configuration is ignored: the SVG is bundled.
     // Preserve existing cards that used show_food=false.
     this._config.card_mode = config.card_mode ?? (config.show_food===false ? "migraine" : "both");
@@ -771,7 +771,7 @@ class MigraineDiaryCard extends HTMLElement {
     for(const key of this._config.section_order){
       const section=document.createElement("section");section.className="section";
       if(foodOnly && key!=="food")continue;
-      if(!foodOnly && key==="food" && (this._config.card_mode==="migraine" || this._config.show_food===false && !this._config.card_mode))continue;
+      if(!foodOnly && key==="food" && this._config.card_mode==="migraine")continue;
       for(const node of sectionContents[key]){
         if(!node)continue;
         if(node===zonesHeading&&!this._showLabel("zones"))continue;
