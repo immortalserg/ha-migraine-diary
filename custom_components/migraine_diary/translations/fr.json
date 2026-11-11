@@ -91,5 +91,16 @@
         "name": "Dernière entrée"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Langue",
+        "description": "Choisissez la langue des enregistrements. Le mode automatique utilise la langue de Home Assistant.",
+        "data": {
+          "language": "Langue"
+        }
+      }
+    }
   }
 }
