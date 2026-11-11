@@ -194,58 +194,89 @@ class MigraineDiaryCard extends HTMLElement {
   _openPastDialog(){
     const dialog=document.createElement("dialog");
     dialog.style.cssText="border:1px solid var(--divider-color);border-radius:12px;padding:20px;background:var(--card-background-color);color:var(--primary-text-color);max-width:90vw";
-    const title=document.createElement("h3");title.textContent="Записать прошлый приступ";dialog.append(title);
-    const inputs=[];
-    for(const labelText of ["Начало","Конец"]){
-      const label=document.createElement("label");label.style.cssText="display:block;margin:12px 0";label.textContent=labelText+" ";
+    const title=document.createElement("h3");title.textContent="Запись задним числом";dialog.append(title);
+    const modeLabel=document.createElement("label");modeLabel.textContent="Действие";
+    const mode=document.createElement("select");mode.style.cssText="display:block;width:100%;padding:8px;margin:6px 0 12px";
+    for(const [value,name] of [["past","Прошедший приступ: начало и конец"],["start","Исправить начало активного приступа"],["end","Завершить активный приступ задним числом"]]){
+      const option=document.createElement("option");option.value=value;option.textContent=name;mode.append(option);
+    }
+    modeLabel.append(mode);dialog.append(modeLabel);
+    const fields={};
+    for(const [key,name] of [["start","Начало"],["end","Конец"]]){
+      const label=document.createElement("label");label.style.cssText="display:block;margin:12px 0";label.textContent=name;
       const input=document.createElement("input");input.type="datetime-local";input.required=true;input.style.cssText="display:block;margin-top:5px;padding:8px;max-width:100%";
-      label.append(input);dialog.append(label);inputs.push(input);
+      label.append(input);dialog.append(label);fields[key]={label,input};
     }
     const occupied=document.createElement("div");occupied.style.cssText="font-size:13px;margin:12px 0;max-height:150px;overflow:auto";occupied.textContent="Загрузка занятых интервалов…";dialog.append(occupied);
-    let episodes=null;
-    const formatDate=value=>new Date(value).toLocaleString(this._language()==="ru"?"ru-RU":undefined);
     const error=document.createElement("p");error.style.color="var(--error-color)";dialog.append(error);
-    const overlaps=()=>{
-      if(!episodes)return false;
-      const start=inputs[0].value?new Date(inputs[0].value).getTime():NaN;
-      const end=inputs[1].value?new Date(inputs[1].value).getTime():NaN;
-      return Number.isFinite(start)&&Number.isFinite(end)&&episodes.some(ep=>
-        new Date(ep.started_at).getTime()<end &&
-        (ep.ended_at===null || new Date(ep.ended_at).getTime()>start));
-    };
+    let episodes=null;
+    const activeEpisode=()=>episodes?.find(ep=>ep.ended_at===null);
+    const formatDate=value=>new Date(value).toLocaleString("ru-RU");
     const validate=()=>{
-      if(overlaps())error.textContent="Выбранное время пересекается с существующим приступом";
-      else error.textContent="";
+      error.textContent="";
+      const kind=mode.value,active=activeEpisode();
+      const start=fields.start.input.value?new Date(fields.start.input.value).getTime():NaN;
+      const end=fields.end.input.value?new Date(fields.end.input.value).getTime():NaN;
+      const now=Date.now();
+      if((kind==="start"||kind==="end")&&episodes&&!active){error.textContent="Нет активного приступа";return false;}
+      if(kind==="start"){
+        if(!Number.isFinite(start))return false;
+        if(start>now){error.textContent="Начало не может быть в будущем";return false;}
+        if(active&&start>new Date(active.started_at).getTime()){error.textContent="Новое начало должно быть раньше записанного";return false;}
+        if(episodes?.some(ep=>ep.id!==active?.id&&new Date(ep.started_at).getTime()<new Date(active.started_at).getTime()&&(ep.ended_at===null||new Date(ep.ended_at).getTime()>start))){
+          error.textContent="Начало пересекается с предыдущим приступом";return false;
+        }
+      }else if(kind==="end"){
+        if(!Number.isFinite(end))return false;
+        if(end>now){error.textContent="Конец не может быть в будущем";return false;}
+        if(active&&end<new Date(active.started_at).getTime()){error.textContent="Конец раньше начала приступа";return false;}
+      }else{
+        if(!Number.isFinite(start)||!Number.isFinite(end))return false;
+        if(start>=end){error.textContent="Конец должен быть позже начала";return false;}
+        if(end>now){error.textContent="Конец не может быть в будущем";return false;}
+        if(episodes?.some(ep=>new Date(ep.started_at).getTime()<end&&(ep.ended_at===null||new Date(ep.ended_at).getTime()>start))){
+          error.textContent="Приступ пересекается с занятым интервалом";return false;
+        }
+      }
+      return true;
     };
-    inputs.forEach(input=>input.addEventListener("input",validate));
+    const refresh=()=>{
+      fields.start.label.style.display=mode.value==="end"?"none":"block";
+      fields.end.label.style.display=mode.value==="start"?"none":"block";
+      validate();
+    };
+    mode.addEventListener("change",refresh);
+    Object.values(fields).forEach(field=>field.input.addEventListener("input",validate));
+    const cancel=this._button("Отмена",()=>dialog.close());
+    const save=this._button("Сохранить",async()=>{
+      if(!validate()){if(!error.textContent)error.textContent="Укажите дату и время";return;}
+      const kind=mode.value;
+      const data={profile_id:this._config.profile_id};
+      if(kind!=="end")data.started_at=new Date(fields.start.input.value).toISOString();
+      if(kind!=="start")data.ended_at=new Date(fields.end.input.value).toISOString();
+      const service=kind==="past"?"record_past_episode":kind==="start"?"correct_active_start":"end_episode";
+      save.disabled=true;
+      try{
+        await this._hass.callService("migraine_diary",service,data);
+        if(kind==="end"){this._pendingActive=false;}
+        dialog.close();this._render();
+      }catch(e){error.textContent=e?.message||String(e);save.disabled=false;}
+    });
+    const buttons=document.createElement("div");buttons.style.cssText="display:flex;gap:8px;justify-content:flex-end";buttons.append(cancel,save);dialog.append(buttons);
+    dialog.addEventListener("close",()=>dialog.remove());
+    this.shadowRoot.append(dialog);dialog.showModal();refresh();
     this._hass.callApi("GET","migraine_diary/history?format=episodes&limit=1000&profile_id="+encodeURIComponent(this._config.profile_id))
       .then(data=>{
+        if(!dialog.isConnected)return;
         episodes=data.episodes||[];
         occupied.replaceChildren();
         const heading=document.createElement("strong");heading.textContent="Занятые интервалы:";occupied.append(heading);
         if(!episodes.length){const empty=document.createElement("div");empty.textContent="Нет записанных приступов";occupied.append(empty);}
         for(const ep of episodes){
-          const line=document.createElement("div");
-          line.textContent=formatDate(ep.started_at)+" — "+(ep.ended_at?formatDate(ep.ended_at):"активен");
-          line.style.marginTop="5px";occupied.append(line);
+          const line=document.createElement("div");line.textContent=formatDate(ep.started_at)+" — "+(ep.ended_at?formatDate(ep.ended_at):"активен");line.style.marginTop="5px";occupied.append(line);
         }
-        validate();
-      })
-      .catch(err=>{occupied.textContent="Не удалось загрузить интервалы: "+String(err?.message||err);});
-    const cancel=this._button("Отмена",()=>dialog.close());
-    const save=this._button("Сохранить",async()=>{
-      const [start,end]=inputs.map(i=>i.value?new Date(i.value).toISOString():null);
-      if(!start||!end){error.textContent="Укажите начало и конец";return;}
-      if(new Date(start)>=new Date(end)){error.textContent="Конец должен быть позже начала";return;}
-      if(new Date(end)>new Date()){error.textContent="Конец не может быть в будущем";return;}
-      if(overlaps()){error.textContent="Приступ пересекается с занятым интервалом";return;}
-      save.disabled=true;
-      try{await this._hass.callService("migraine_diary","record_past_episode",{profile_id:this._config.profile_id,started_at:start,ended_at:end});dialog.close();}
-      catch(e){error.textContent=e?.message||String(e);save.disabled=false;}
-    });
-    const buttons=document.createElement("div");buttons.style.cssText="display:flex;gap:8px;justify-content:flex-end";buttons.append(cancel,save);dialog.append(buttons);
-    dialog.addEventListener("close",()=>dialog.remove());
-    this.shadowRoot.append(dialog);dialog.showModal();
+        refresh();
+      }).catch(err=>{if(dialog.isConnected)occupied.textContent="Не удалось загрузить интервалы: "+String(err?.message||err);});
   }
   _render(){
     if(!this.shadowRoot || !this._config)return;
