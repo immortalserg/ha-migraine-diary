@@ -102,5 +102,157 @@
         }
       }
     }
+  },
+  "services": {
+    "start_episode": {
+      "name": "Начать приступ",
+      "fields": {
+        "profile_id": {
+          "name": "Профиль"
+        },
+        "started_at": {
+          "name": "Начало"
+        },
+        "headache_type": {
+          "name": "Тип головной боли"
+        },
+        "notes": {
+          "name": "Примечания"
+        }
+      }
+    },
+    "end_episode": {
+      "name": "Завершить приступ",
+      "fields": {
+        "profile_id": {
+          "name": "Профиль"
+        },
+        "episode_id": {
+          "name": "ID приступа"
+        },
+        "ended_at": {
+          "name": "Конец"
+        }
+      }
+    },
+    "record_past_episode": {
+      "name": "Записать прошлый приступ",
+      "fields": {
+        "profile_id": {
+          "name": "Профиль"
+        },
+        "started_at": {
+          "name": "Начало"
+        },
+        "ended_at": {
+          "name": "Конец"
+        }
+      }
+    },
+    "correct_active_start": {
+      "name": "Исправить начало приступа",
+      "fields": {
+        "profile_id": {
+          "name": "Профиль"
+        },
+        "started_at": {
+          "name": "Начало"
+        }
+      }
+    },
+    "record_premonition": {
+      "name": "Записать предчувствие",
+      "fields": {
+        "profile_id": {
+          "name": "Профиль"
+        },
+        "symptoms": {
+          "name": "Симптомы"
+        },
+        "occurred_at": {
+          "name": "Время события"
+        }
+      }
+    },
+    "record_medication": {
+      "name": "Записать лекарство",
+      "fields": {
+        "profile_id": {
+          "name": "Профиль"
+        },
+        "name": {
+          "name": "Лекарство"
+        },
+        "dose": {
+          "name": "Доза"
+        },
+        "unit": {
+          "name": "Единица"
+        },
+        "episode_id": {
+          "name": "ID приступа"
+        },
+        "occurred_at": {
+          "name": "Время события"
+        }
+      }
+    },
+    "record_pain": {
+      "name": "Записать боль",
+      "fields": {
+        "profile_id": {
+          "name": "Профиль"
+        },
+        "intensity": {
+          "name": "Интенсивность"
+        },
+        "zones": {
+          "name": "Зоны боли"
+        },
+        "symptoms": {
+          "name": "Симптомы"
+        },
+        "episode_id": {
+          "name": "ID приступа"
+        },
+        "occurred_at": {
+          "name": "Время события"
+        }
+      }
+    },
+    "list_history": {
+      "name": "Просмотреть историю",
+      "fields": {
+        "profile_id": {
+          "name": "Профиль"
+        },
+        "limit": {
+          "name": "Лимит"
+        },
+        "start": {
+          "name": "От"
+        },
+        "end": {
+          "name": "До"
+        }
+      }
+    },
+    "export_csv": {
+      "name": "Экспорт CSV",
+      "fields": {
+        "profile_id": {
+          "name": "Профиль"
+        },
+        "limit": {
+          "name": "Лимит"
+        },
+        "start": {
+          "name": "От"
+        },
+        "end": {
+          "name": "До"
+        }
+      }
+    }
   }
 }
