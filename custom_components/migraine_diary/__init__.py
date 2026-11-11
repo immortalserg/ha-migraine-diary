@@ -6,6 +6,7 @@ import sqlite3
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from .history_api import MigraineHistoryView
 from .services import register_services, unregister_services
 from .storage import DiaryStore
 
@@ -28,6 +29,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         pass
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = store
+    hass.http.register_view(MigraineHistoryView(store))
     register_services(hass, store)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
