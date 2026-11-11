@@ -16,8 +16,8 @@ PLATFORMS = ["sensor", "binary_sensor", "switch", "number"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Initialize SQLite and register diary services."""
-    if hass.data.get(DOMAIN):
-        # One database/service handler per HA instance in this initial version.
+    if any(isinstance(value, DiaryStore) for value in hass.data.get(DOMAIN, {}).values()):
+        # Only reject a second active diary entry, not stale helper data.
         return False
 
     store = DiaryStore(hass.config.path("migraine_diary.db"))
@@ -37,8 +37,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Apply updated language options by reloading the integration."""
-    await hass.config_entries.async_reload(entry.entry_id)
+    """Update language-dependent entities without unloading the integration."""
+    data = hass.data.get(DOMAIN, {})
+    sensor = data.get("last_record_sensor")
+    if sensor is not None and getattr(sensor, "_entry_id", None) == entry.entry_id:
+        sensor._publish_event()
+    state = hass.states.get("binary_sensor.migren")
+    if state is not None:
+        # Refresh the public language attribute used by the Lovelace card.
+        attributes = dict(state.attributes)
+        attributes["language"] = entry.options.get("language", "auto")
+        hass.states.async_set(state.entity_id, state.state, attributes)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -47,5 +56,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         entry.async_unload_callbacks()
         unregister_services(hass)
-        hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+        data = hass.data.get(DOMAIN, {})
+        data.pop(entry.entry_id, None)
+        if not data:
+            hass.data.pop(DOMAIN, None)
     return unloaded
