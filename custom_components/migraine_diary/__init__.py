@@ -19,7 +19,7 @@ from .storage import DiaryStore
 DOMAIN = "migraine_diary"
 PLATFORMS = ["sensor", "binary_sensor", "switch", "number"]
 FRONTEND_URL = "/migraine_diary/frontend"
-FRONTEND_VERSION = "0.2.5"
+FRONTEND_VERSION = "0.2.6"
 
 
 async def _async_register_frontend(hass: HomeAssistant) -> None:
