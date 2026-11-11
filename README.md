@@ -1,63 +1,79 @@
 # Migraine Diary for Home Assistant
 
-A local-first headache and migraine diary for Home Assistant, designed to help patients record episodes and prepare structured reports for clinicians.
+**A local migraine and headache diary for Home Assistant**, with a configurable Lovelace card, optional food logging, and complete CSV export. The integration records events; it does **not** diagnose migraine, identify triggers, or perform medical analysis.
 
-> **Development status:** early prototype. Not ready for clinical use or production installation.
+**Languages:** [English](README.md) · [Русский](docs/README.ru.md) · [Français](docs/README.fr.md) · [Deutsch](docs/README.de.md) · [Italiano](docs/README.it.md) · [Lëtzebuergesch](docs/README.lb.md)
 
-## Goals
+## Features
 
-- Record headache episode start/end times, including manually corrected timestamps.
-- Track pain intensity and anatomical locations using an interactive SVG.
-- Configure symptoms, aura/prodrome indicators, and medications.
-- Log medication doses, administration times, and observed response.
-- Optional food diary to explore possible triggers without claiming causality.
-- Calendar and clinician-oriented PDF/CSV reports.
-- Preserve historical records even when configurable labels are edited.
-- Support Russian, English, French, German, Italian, and Luxembourgish interfaces.
+- **Episodes:** start and end a migraine/headache episode; correct the start time; register a completed past episode.
+- **Pain:** record intensity, choose pain locations on the bundled head SVG (19 zones), and select symptoms.
+- **Symptoms and medication:** log warning signs, symptoms, medication names, doses, units, and event times.
+- **Food diary:** record foods, quantities, notes, and consumption time; edit or delete food entries.
+- **Three card modes:** migraine only, migraine + food, or food only. You can place two independent cards on the same dashboard.
+- **History and calendar:** view diary entries and past episodes.
+- **Complete CSV export:** export the entire recorded history, including food, episodes, symptoms, and medication, without a 1,000-record cap. CSV is UTF-8 with BOM and uses a semicolon separator.
+- **Home Assistant integration:** entities and services for automations; local SQLite storage; visual card editor and language selection.
 
-## Installation (development preview)
+## Installation through HACS
 
-This project is still a development preview. Back up Home Assistant before updating.
+1. Open **HACS → ⋮ → Custom repositories**.
+2. Enter `https://github.com/immortalserg/ha-migraine-diary` and select **Integration**.
+3. Install **Migraine Diary** and restart Home Assistant.
+4. Open **Settings → Devices & services → Add integration**, search for **Migraine Diary**, and finish setup.
+5. Open a dashboard, edit it, and add the **Migraine Diary** custom card (or use a manual card).
 
-1. Copy the `custom_components/migraine_diary` directory into the Home Assistant `config/custom_components/` directory.
-2. Restart Home Assistant.
-3. Go to **Settings → Devices & services → Add integration** and select **Migraine Diary**.
-4. Add a manual Lovelace card with type `custom:migraine-diary-card`. The JavaScript card and SVG are bundled and registered automatically when the integration loads. No separate resource registration is needed.
+This is a **custom HACS repository**, not a built-in HACS catalog listing. New tagged releases are published by GitHub Actions when the manifest version changes on `main`.
 
-### Language settings
+### Manual installation
 
-Choose **Automatic** or a specific language under the integration's **Configure** options. The Lovelace card inherits this setting by default. A card can override it with `language: fr` (or another supported code). Automatic mode uses the Home Assistant user's locale in the card. Entity names on the standard Home Assistant device page follow the Home Assistant user interface language, independently of the integration option.
+Copy `custom_components/migraine_diary` to `<config>/custom_components/migraine_diary`, restart Home Assistant, and add the integration. The bundled JavaScript and SVG resources are registered automatically; **do not manually add a Lovelace JavaScript resource**.
 
-### HACS
+## Card configuration
 
-For testing as a **custom HACS repository**:
+The visual editor supports card options, including mode and language. Example manual configurations:
 
-1. Open HACS in Home Assistant, open its menu, and select **Custom repositories**.
-2. Add `https://github.com/immortalserg/ha-migraine-diary` with category **Integration**.
-3. Find **Migraine Diary** in HACS and install it, then restart Home Assistant.
-4. Add the integration under **Settings → Devices & services**.
-5. Add a manual Lovelace card of type `custom:migraine-diary-card`. The integration serves and registers its bundled JavaScript and SVG automatically.
+**Migraine only**
+```yaml
+type: custom:migraine-diary-card
+card_mode: migraine
+profile_id: patient
+```
 
-The bundled frontend is registered by the integration. For HACS updates, GitHub Releases are created automatically after a version bump in `custom_components/migraine_diary/manifest.json` is merged into `main`. The release workflow publishes a `vX.Y.Z` tag only if that release does not already exist. HACS may need a repository refresh before the new version appears. This remains a custom HACS repository, not a default-store listing.
+**Migraine and food**
+```yaml
+type: custom:migraine-diary-card
+card_mode: both
+profile_id: patient
+```
 
-## Architecture
+**Food only**
+```yaml
+type: custom:migraine-diary-card
+card_mode: food
+profile_id: patient
+```
 
-A custom Home Assistant integration under `custom_components/migraine_diary` with local SQLite persistence and a companion Lovelace card. The existing SVG has 19 pain zones and nine intensity selectors; a migration to a standardized 0–10 scale will be evaluated.
+Use the same `profile_id` on both cards to record events in the same diary. Food-only mode hides migraine controls. The food form can also be hidden in migraine mode.
 
-## Development milestones
+## Languages
 
-1. Integration skeleton, configuration flow, database schema and migrations.
-2. Episode lifecycle and event logging with tests.
-3. Lovelace SVG card and editable symptom/medication catalogs.
-4. Calendar, optional food diary, and analytics.
-5. Exportable clinician reports and installation documentation.
+The integration and card support **English (`en`), Russian (`ru`), French (`fr`), German (`de`), Italian (`it`), and Luxembourgish (`lb` / `lu`)**. Select **Automatic** in integration options to follow the Home Assistant interface language, or choose a language explicitly. The card can override this with, for example, `language: fr`.
 
-## Privacy and safety
+## Export and data
 
-Medical diary entries remain local to the user's Home Assistant installation unless the user explicitly exports or shares them. Backups and access control must be configured by the administrator.
+Use the card's **Export CSV** action to download the complete timeline. Columns include `date`, `event`, `level`, `zones`, `symptoms`, `medication`, `food`, `quantity`, `notes`, `dose`, `unit`, `episode_id`, and `id`. Open the file in LibreOffice Calc, Excel, or a script of your choice. The integration does not infer causality between foods and headaches.
 
-This project is a recording aid, not a diagnostic or medical decision-making tool.
+Diary data is stored locally in Home Assistant's SQLite-backed integration storage. Protect your Home Assistant account and backups: exported CSV files contain potentially sensitive health information.
 
-## License
+## Services and automation
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+The integration exposes services such as `migraine_diary.start_episode`, `end_episode`, `record_past_episode`, `correct_active_start`, `record_premonition`, `record_pain`, `record_medication`, `record_food`, `update_food`, `delete_food`, `list_history`, and `export_csv`. Service schemas and required fields are available under **Developer tools → Actions**. The diary also provides Home Assistant entities representing the active episode and recent records.
+
+## Support, privacy and disclaimer
+
+- **Issues and feature requests:** [GitHub Issues](https://github.com/immortalserg/ha-migraine-diary/issues)
+- **Releases:** [GitHub Releases](https://github.com/immortalserg/ha-migraine-diary/releases)
+- **License:** [MIT](LICENSE)
+
+Migraine Diary is a personal recording tool, **not** a medical device or a substitute for professional medical advice. Data stays within the user's Home Assistant environment unless exported or shared. Home Assistant administrators are responsible for access controls and backups.
