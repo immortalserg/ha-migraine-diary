@@ -28,8 +28,8 @@ class DiaryStoreTests(unittest.IsolatedAsyncioTestCase):
     async def test_episode_lifecycle(self):
         episode = await self.store.start_episode("patient", started_at="2026-11-10T10:00:00+01:00")
         self.assertEqual((await self.store.get_active_episode("patient"))["id"], episode)
-        await self.store.record_event("patient", "pain", {"intensity": 7, "zones": [1, 3]}, episode_id=episode)
-        await self.store.record_event("patient", "medication", {"name": "Example", "dose": 10, "unit": "mg"}, episode_id=episode)
+        await self.store.record_event("patient", "pain", {"intensity": 7, "zones": [1, 3]}, episode_id=episode, occurred_at="2026-11-10T10:30:00+01:00")
+        await self.store.record_event("patient", "medication", {"name": "Example", "dose": 10, "unit": "mg"}, episode_id=episode, occurred_at="2026-11-10T11:00:00+01:00")
         await self.store.end_episode(episode, ended_at="2026-11-10T12:00:00+01:00")
         self.assertIsNone(await self.store.get_active_episode("patient"))
         episodes = await self.store.list_episodes("patient")
@@ -40,7 +40,7 @@ class DiaryStoreTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_prevent_duplicate_active_episode(self):
         await self.store.start_episode("patient")
-        with self.assertRaises(sqlite3.IntegrityError):
+        with self.assertRaises(ValueError):
             await self.store.start_episode("patient")
 
     async def test_end_before_start_rejected(self):
