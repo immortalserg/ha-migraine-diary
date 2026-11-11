@@ -6,5 +6,90 @@
         "description": "Configurer votre journal des maux de tête"
       }
     }
+  },
+  "entity": {
+    "switch": {
+      "zone": {
+        "name": "Zone douloureuse {number}"
+      },
+      "symptom_1": {
+        "name": "Douleur aiguë intense"
+      },
+      "symptom_2": {
+        "name": "Douleur pulsatile"
+      },
+      "symptom_3": {
+        "name": "Douleur pulsatile intermittente"
+      },
+      "symptom_4": {
+        "name": "Aggravée par le mouvement"
+      },
+      "symptom_5": {
+        "name": "Nausée"
+      },
+      "symptom_6": {
+        "name": "Vomissements"
+      },
+      "symptom_7": {
+        "name": "Sensibilité à la lumière"
+      },
+      "symptom_8": {
+        "name": "Sensibilité au bruit"
+      },
+      "symptom_9": {
+        "name": "Douleur cervicale"
+      },
+      "symptom_10": {
+        "name": "Vertiges"
+      },
+      "symptom_11": {
+        "name": "Écoulement nasal"
+      },
+      "symptom_12": {
+        "name": "Insomnie"
+      },
+      "symptom_13": {
+        "name": "Humeur dépressive"
+      },
+      "symptom_14": {
+        "name": "Anxiété"
+      },
+      "symptom_15": {
+        "name": "Sensibilité aux odeurs"
+      },
+      "symptom_16": {
+        "name": "Sensation de chaleur"
+      },
+      "symptom_17": {
+        "name": "Acouphènes"
+      },
+      "symptom_18": {
+        "name": "Fatigue"
+      },
+      "symptom_19": {
+        "name": "Vision floue"
+      },
+      "symptom_20": {
+        "name": "Sautes d’humeur"
+      }
+    },
+    "number": {
+      "migraine_level": {
+        "name": "Intensité de la douleur"
+      }
+    },
+    "binary_sensor": {
+      "migraine_active": {
+        "name": "Crise de migraine"
+      }
+    },
+    "sensor": {
+      "active_episode": {
+        "name": "Crise active"
+      },
+      "last_record": {
+        "name": "Dernière entrée"
+      }
+    }
   }
 }
