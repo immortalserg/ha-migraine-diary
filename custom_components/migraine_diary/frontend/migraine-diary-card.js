@@ -633,8 +633,10 @@ class MigraineDiaryCard extends HTMLElement {
       ? ({ru:"Питание",fr:"Alimentation",de:"Ernährung",lu:"Ernärung",en:"Food"}[this._language()]||"Food")
       : this._t("title");
     if(this._showLabel("title"))card.append(h);
-    const active=this._active();
-    const status=document.createElement("div");status.className="status";status.textContent=this._t(active?"active":"noEpisode");if(!foodOnly)card.append(status);
+    const active=foodOnly?false:this._active();
+    if(!foodOnly){
+      const status=document.createElement("div");status.className="status";status.textContent=this._t(active?"active":"noEpisode");card.append(status);
+    }
     const actions=document.createElement("div");actions.className="action-grid";
     actions.append(this._tile(this._t("start"),"mdi:play-circle-outline",this._config.action_display,()=>this._call("start_episode",{}),active,"action-btn"));
     actions.append(this._tile(this._t("end"),"mdi:stop-circle-outline",this._config.action_display,()=>this._call("end_episode",{episode_id:this._hass?.states?.[this._config.active_entity || "binary_sensor.migren"]?.attributes?.episode_id}),!active,"action-btn"));
@@ -770,8 +772,7 @@ class MigraineDiaryCard extends HTMLElement {
     };
     for(const key of this._config.section_order){
       const section=document.createElement("section");section.className="section";
-      if(foodOnly && key!=="food")continue;
-      if(!foodOnly && key==="food" && this._config.card_mode==="migraine")continue;
+      if((foodOnly && key!=="food") || (!foodOnly && key==="food" && this._config.card_mode==="migraine"))continue;
       for(const node of sectionContents[key]){
         if(!node)continue;
         if(node===zonesHeading&&!this._showLabel("zones"))continue;
