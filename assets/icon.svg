@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Migraine Diary">
+<rect x="8" y="8" width="240" height="240" rx="56" fill="#374B82"/>
+<path d="M86 61c-29 12-45 41-43 71 2 27 18 46 38 55v26h91v-34c24-14 39-39 39-67 0-40-32-72-72-72-21 0-39 8-53 21z" fill="#F6F7FC"/>
+<path d="M136 67l-29 55h24l-18 59 51-76h-27l20-38z" fill="#F27B75"/>
+<path d="M64 210h119" stroke="#CAD3ED" stroke-width="10" stroke-linecap="round"/>
+</svg>
