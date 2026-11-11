@@ -13,7 +13,26 @@ A local-first headache and migraine diary for Home Assistant, designed to help p
 - Optional food diary to explore possible triggers without claiming causality.
 - Calendar and clinician-oriented PDF/CSV reports.
 - Preserve historical records even when configurable labels are edited.
-- Support Russian and English interfaces.
+- Support Russian, English, French, German, Italian, and Luxembourgish interfaces.
+
+## Installation (development preview)
+
+This project is still a development preview. Back up Home Assistant before updating.
+
+1. Copy the `custom_components/migraine_diary` directory into the Home Assistant `config/custom_components/` directory.
+2. Restart Home Assistant.
+3. Go to **Settings → Devices & services → Add integration** and select **Migraine Diary**.
+4. Copy `frontend/migraine-diary-card.js` into `config/www/migraine-diary/migraine-diary-card.js`.
+5. Add the Lovelace JavaScript resource `/local/migraine-diary/migraine-diary-card.js` as a **JavaScript module**.
+6. Add a manual Lovelace card with type `custom:migraine-diary-card`. If using the head illustration, copy the corresponding SVG asset into `config/www/migraine-diary/head.svg` and configure `svg_url` accordingly.
+
+### Language settings
+
+Choose **Automatic** or a specific language under the integration's **Configure** options. The Lovelace card inherits this setting by default. A card can override it with `language: fr` (or another supported code). Automatic mode uses the Home Assistant user's locale in the card. Entity names on the standard Home Assistant device page follow the Home Assistant user interface language, independently of the integration option.
+
+### HACS
+
+The repository contains `hacs.json`, but HACS installation and update behavior should be verified before declaring a stable release. The frontend card resource may require manual setup.
 
 ## Architecture
 
@@ -35,4 +54,4 @@ This project is a recording aid, not a diagnostic or medical decision-making too
 
 ## License
 
-License to be selected before public distribution.
+A distribution license has not yet been selected. Do not assume permission to redistribute or modify the project until a license is published.
