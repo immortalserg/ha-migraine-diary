@@ -16,7 +16,7 @@ const DEFAULT_LABELS={title:true,zones:true,intensity:true,symptoms:true,medicat
 const SYMPTOMS=["Сильная ударная боль","Пульсирующая боль","Пульсирующая периодическая боль","Усиливается при движении","Тошнота","Рвота","Светочувствительность","Чувствительность к шуму","Боль в шее","Головокружение","Насморк","Бессонница","Подавленное настроение","Тревожность","Чувствительность к запахам","Жар / ощущение жара","Звон в ушах","Усталость","Расплывчатое зрение","Перепады настроения"];
 class MigraineDiaryCard extends HTMLElement {
   setConfig(config) {
-    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", ...config};
+    this._config = {button_font_size:10, button_icon_size:20, action_font_size:14, action_icon_size:20, use_ha_helpers:true, profile_id:"patient", svg_url:"/local/migraine-diary/head.svg", medications:["Migreaout","Maxalt","Exedryn","Nurofen"], show_labels:true, section_order:DEFAULT_SECTION_ORDER, section_gap:16, action_columns:4, symptom_columns:5, medication_columns:5, action_display:"both", symptom_display:"both", medication_display:"both", action_button_color:"", action_icon_color:"", medication_button_color:"", medication_icon_color:"", ...config};
     for(const key of ["button_font_size","button_icon_size","action_font_size","action_icon_size"]){
       const value=Number(this._config[key]);
       if(!Number.isFinite(value)||value<6||value>64)throw new Error(key+" must be 6–64 pixels");
@@ -28,6 +28,7 @@ class MigraineDiaryCard extends HTMLElement {
     for(const key of ["action_columns","symptom_columns","medication_columns"]){const n=Number(this._config[key]);if(!Number.isInteger(n)||n<1||n>12)throw Error(key+" must be an integer from 1 to 12");this._config[key]=n;}
     const gap=Number(this._config.section_gap);if(!Number.isFinite(gap)||gap<0||gap>100)throw Error("section_gap must be 0–100");this._config.section_gap=gap;
     for(const key of ["action_display","symptom_display","medication_display"]){if(!["both","icon","label"].includes(this._config[key]))throw Error(key+" must be both, icon or label");}
+    for(const key of ["action_button_color","action_icon_color","medication_button_color","medication_icon_color"]){const color=this._config[key];if(typeof color!=="string" || (color && !CSS.supports("color",color)))throw Error("Invalid CSS color: "+key);}
     this._zones = new Set(); this._symptoms = new Set(); this._intensity = 5;
     this._loadedAssessmentKey = null;
     this._draftRestoredKey = null;
@@ -142,6 +143,13 @@ class MigraineDiaryCard extends HTMLElement {
   _tile(label,iconName,display,action,disabled=false,className=""){
     const btn=document.createElement("button");btn.type="button";btn.className="tile-btn "+className;
     btn.disabled=disabled||this._busy;btn.setAttribute("aria-label",label);btn.title=label;
+    const category=className==="action-btn"?"action":"medication";
+    if(["action-btn","medication-btn"].includes(className)){
+      const background=this._config[category+"_button_color"];
+      const iconColor=this._config[category+"_icon_color"];
+      if(background)btn.style.backgroundColor=background;
+      if(iconColor)btn.style.setProperty("--tile-icon-color",iconColor);
+    }
     if(display!=="label"){const icon=document.createElement("ha-icon");icon.setAttribute("icon",iconName);btn.append(icon);}
     if(display!=="icon"){const span=document.createElement("span");span.textContent=label;btn.append(span);}
     btn.addEventListener("click",action);return btn;
@@ -216,6 +224,7 @@ class MigraineDiaryCard extends HTMLElement {
       .symptom-btn{background:rgb(0,255,0);color:#111;border:1px solid rgba(0,0,0,.16)}
       .symptom-btn.selected{background:rgb(255,0,0);color:#fff}
       .symptom-btn ha-icon,.action-btn ha-icon{--mdc-icon-size:var(--diary-button-icon);width:var(--diary-button-icon);height:var(--diary-button-icon);flex:none}
+      .tile-btn ha-icon{color:var(--tile-icon-color,inherit)}
       .tile-btn span{font-size:var(--diary-button-font);line-height:1.12;white-space:normal;text-align:center;overflow-wrap:anywhere}
       .action-btn span{font-size:var(--diary-action-font)}
       `;
@@ -227,7 +236,7 @@ class MigraineDiaryCard extends HTMLElement {
     const actions=document.createElement("div");actions.className="action-grid";
     actions.append(this._tile(this._t("start"),"mdi:play-circle-outline",this._config.action_display,()=>this._call("start_episode",{}),active,"action-btn"));
     actions.append(this._tile(this._t("end"),"mdi:stop-circle-outline",this._config.action_display,()=>this._call("end_episode",{episode_id:this._hass?.states?.[this._config.active_entity || "binary_sensor.migren"]?.attributes?.episode_id}),!active,"action-btn"));
-    actions.append(this._tile(this._t("premonition"),"mdi:weather-lightning",this._config.action_display,()=>this._call("record_premonition",{symptoms:[...this._symptoms]}),false,"action-btn"));
+    actions.append(this._tile(this._t("premonition"),"mdi:weather-lightning",this._config.action_display,()=>this._call("record_premonition",{symptoms:[...this._symptoms]}),active,"action-btn"));
     actions.append(this._tile(this._t("record"),"mdi:content-save-outline",this._config.action_display,()=>this._call("record_pain",{
       intensity:this._intensity,
       zones:[...this._zones].sort((a,b)=>a-b),
