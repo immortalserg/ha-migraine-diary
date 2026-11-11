@@ -153,7 +153,7 @@ LAST_RECORD_TEXT = {
 class MigraineLastRecordSensor(SensorEntity):
     """Show the latest successfully committed event, without reading SQLite."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _attr_translation_key = "last_record"
     _attr_icon = "mdi:database-check"
     _attr_should_poll = False
