@@ -1,5 +1,6 @@
 """Migraine diary owned switches: 19 zones and 20 symptoms."""
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
 
 DOMAIN = "migraine_diary"
@@ -29,7 +30,18 @@ class DiaryToggle(SwitchEntity, RestoreEntity):
     _attr_has_entity_name = False
     _attr_icon = "mdi:head-flash"
 
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={("migraine_diary", self._entry_id)},
+            name="Migraine Diary",
+            manufacturer="Migraine Diary",
+            model="Headache diary",
+            configuration_url="https://github.com/immortalserg/ha-migraine-diary",
+        )
+
     def __init__(self, entry_id, slug, label):
+        self._entry_id = entry_id
         self._attr_unique_id = f"{entry_id}_{slug}"
         self.entity_id = f"switch.{slug}"
         self._attr_name = label
