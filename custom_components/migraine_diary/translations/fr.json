@@ -102,5 +102,157 @@
         }
       }
     }
+  },
+  "services": {
+    "start_episode": {
+      "name": "Commencer une crise",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "started_at": {
+          "name": "Début"
+        },
+        "headache_type": {
+          "name": "Type de céphalée"
+        },
+        "notes": {
+          "name": "Notes"
+        }
+      }
+    },
+    "end_episode": {
+      "name": "Terminer une crise",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "episode_id": {
+          "name": "ID de la crise"
+        },
+        "ended_at": {
+          "name": "Fin"
+        }
+      }
+    },
+    "record_past_episode": {
+      "name": "Enregistrer une crise passée",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "started_at": {
+          "name": "Début"
+        },
+        "ended_at": {
+          "name": "Fin"
+        }
+      }
+    },
+    "correct_active_start": {
+      "name": "Corriger le début de la crise",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "started_at": {
+          "name": "Début"
+        }
+      }
+    },
+    "record_premonition": {
+      "name": "Enregistrer les signes précurseurs",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "symptoms": {
+          "name": "Symptômes"
+        },
+        "occurred_at": {
+          "name": "Heure de l’événement"
+        }
+      }
+    },
+    "record_medication": {
+      "name": "Enregistrer un médicament",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "name": {
+          "name": "Médicament"
+        },
+        "dose": {
+          "name": "Dose"
+        },
+        "unit": {
+          "name": "Unité"
+        },
+        "episode_id": {
+          "name": "ID de la crise"
+        },
+        "occurred_at": {
+          "name": "Heure de l’événement"
+        }
+      }
+    },
+    "record_pain": {
+      "name": "Enregistrer la douleur",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "intensity": {
+          "name": "Intensité"
+        },
+        "zones": {
+          "name": "Zones douloureuses"
+        },
+        "symptoms": {
+          "name": "Symptômes"
+        },
+        "episode_id": {
+          "name": "ID de la crise"
+        },
+        "occurred_at": {
+          "name": "Heure de l’événement"
+        }
+      }
+    },
+    "list_history": {
+      "name": "Consulter l’historique",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "limit": {
+          "name": "Limite"
+        },
+        "start": {
+          "name": "Du"
+        },
+        "end": {
+          "name": "Au"
+        }
+      }
+    },
+    "export_csv": {
+      "name": "Exporter en CSV",
+      "fields": {
+        "profile_id": {
+          "name": "Profil"
+        },
+        "limit": {
+          "name": "Limite"
+        },
+        "start": {
+          "name": "Du"
+        },
+        "end": {
+          "name": "Au"
+        }
+      }
+    }
   }
 }
