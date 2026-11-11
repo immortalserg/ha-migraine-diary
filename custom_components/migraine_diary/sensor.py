@@ -199,7 +199,7 @@ class MigraineLastRecordSensor(SensorEntity):
         words = LAST_RECORD_TEXT[lang]
         if event is None:
             self._attr_native_value = words[0]
-            self._attr_extra_state_attributes = {}
+            self._attr_extra_state_attributes = {"language": self._entry.options.get("language", "auto")}
             self.async_write_ha_state()
             return
         kind = event["event_type"]
@@ -207,7 +207,7 @@ class MigraineLastRecordSensor(SensorEntity):
         labels = {"start": words[1], "end": words[2], "state_update": words[3],
                   "pain": words[3], "medication": words[4], "premonition": words[5]}
         label = labels.get(kind, kind)
-        attrs = {"recorded_at": event["saved_at"], "event_type": kind, "event_label": label}
+        attrs = {"language": self._entry.options.get("language", "auto"), "recorded_at": event["saved_at"], "event_type": kind, "event_label": label}
         parts = [label]
         if kind in ("start", "state_update", "pain"):
             level = payload.get("intensity")
