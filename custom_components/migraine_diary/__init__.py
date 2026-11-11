@@ -19,6 +19,7 @@ from .storage import DiaryStore
 DOMAIN = "migraine_diary"
 PLATFORMS = ["sensor", "binary_sensor", "switch", "number"]
 FRONTEND_URL = "/migraine_diary/frontend"
+FRONTEND_VERSION = "0.1.0"
 
 
 async def _async_register_frontend(hass: HomeAssistant) -> None:
@@ -30,7 +31,7 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
         StaticPathConfig(FRONTEND_URL, str(asset_dir), cache_headers=False)
     ])
     frontend.add_extra_js_url(
-        hass, f"{FRONTEND_URL}/migraine-diary-card.js"
+        hass, f"{FRONTEND_URL}/migraine-diary-card.js?v={FRONTEND_VERSION}"
     )
     hass.data[DOMAIN]["frontend_registered"] = True
 
