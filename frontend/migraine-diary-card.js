@@ -218,12 +218,12 @@ class MigraineDiaryCard extends HTMLElement {
       const start=fields.start.input.value?new Date(fields.start.input.value).getTime():NaN;
       const end=fields.end.input.value?new Date(fields.end.input.value).getTime():NaN;
       const now=Date.now();
-      if((kind==="start"||kind==="end")&&episodes&&!active){error.textContent="Нет активного приступа";return false;}
+      if(kind==="end"&&episodes&&!active){error.textContent="Нет активного приступа";return false;}
       if(kind==="start"){
         if(!Number.isFinite(start))return false;
         if(start>now){error.textContent="Начало не может быть в будущем";return false;}
         if(active&&start>new Date(active.started_at).getTime()){error.textContent="Новое начало должно быть раньше записанного";return false;}
-        if(episodes?.some(ep=>ep.id!==active?.id&&new Date(ep.started_at).getTime()<new Date(active.started_at).getTime()&&(ep.ended_at===null||new Date(ep.ended_at).getTime()>start))){
+        if(episodes?.some(ep=>ep.id!==active?.id&&(!active||new Date(ep.started_at).getTime()<new Date(active.started_at).getTime())&&(ep.ended_at===null||new Date(ep.ended_at).getTime()>start))){
           error.textContent="Начало пересекается с предыдущим приступом";return false;
         }
       }else if(kind==="end"){
@@ -254,11 +254,12 @@ class MigraineDiaryCard extends HTMLElement {
       const data={profile_id:this._config.profile_id};
       if(kind!=="end")data.started_at=new Date(fields.start.input.value).toISOString();
       if(kind!=="start")data.ended_at=new Date(fields.end.input.value).toISOString();
-      const service=kind==="past"?"record_past_episode":kind==="start"?"correct_active_start":"end_episode";
+      const service=kind==="past"?"record_past_episode":kind==="start"?(activeEpisode()?"correct_active_start":"start_episode"):"end_episode";
       save.disabled=true;
       try{
         await this._hass.callService("migraine_diary",service,data);
         if(kind==="end"){this._pendingActive=false;}
+        if(kind==="start"&&service==="start_episode"){this._pendingActive=true;}
         dialog.close();this._render();
       }catch(e){error.textContent=e?.message||String(e);save.disabled=false;}
     });
