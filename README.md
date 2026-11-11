@@ -38,7 +38,7 @@ For testing as a **custom HACS repository**:
 4. Add the integration under **Settings → Devices & services**.
 5. Add a manual Lovelace card of type `custom:migraine-diary-card`. The integration serves and registers its bundled JavaScript and SVG automatically.
 
-This automatic frontend loading is not yet verified on a live Home Assistant instance. This is an unverified development installation path, not a claim of HACS default-store inclusion. Test installation and upgrades on a backed-up Home Assistant instance before release.
+The bundled frontend is registered by the integration. For HACS updates, GitHub Releases are created automatically after a version bump in `custom_components/migraine_diary/manifest.json` is merged into `main`. The release workflow publishes a `vX.Y.Z` tag only if that release does not already exist. HACS may need a repository refresh before the new version appears. This remains a custom HACS repository, not a default-store listing.
 
 ## Architecture
 
