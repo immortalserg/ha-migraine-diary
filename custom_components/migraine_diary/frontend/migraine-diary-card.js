@@ -532,6 +532,11 @@ class MigraineDiaryCard extends HTMLElement {
       const data={profile_id:this._config.profile_id};
       if(kind!=="end")data.started_at=new Date(fields.start.input.value).toISOString();
       if(kind!=="start")data.ended_at=new Date(fields.end.input.value).toISOString();
+      if(kind==="past"){
+        data.intensity=this._intensity;
+        data.zones=[...this._zones];
+        data.symptoms=[...this._symptoms];
+      }
       const service=kind==="past"?"record_past_episode":kind==="start"?(activeEpisode()?"correct_active_start":"start_episode"):"end_episode";
       save.disabled=true;
       try{
