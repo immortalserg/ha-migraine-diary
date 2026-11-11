@@ -91,5 +91,16 @@
         "name": "Letzter Eintrag"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sprache",
+        "description": "Wählen Sie die Sprache der Einträge. Automatisch verwendet die Home-Assistant-Sprache.",
+        "data": {
+          "language": "Sprache"
+        }
+      }
+    }
   }
 }
