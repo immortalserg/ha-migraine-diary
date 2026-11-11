@@ -42,7 +42,7 @@ class MigraineHistoryView(HomeAssistantView):
             output = io.StringIO()
             columns = [
                 "date", "event", "level", "zones", "symptoms",
-                "medication", "dose", "unit", "episode_id", "id",
+                "medication", "food", "quantity", "notes", "dose", "unit", "episode_id", "id",
             ]
             writer = csv.DictWriter(
                 output, fieldnames=columns, extrasaction="ignore", delimiter=";"
